@@ -103,5 +103,6 @@ The goal is to provide a **ChatGPT-like interface for understanding software rep
                 Answer + Sources
 
 
-#### Author
+```
+#### By 
 Prachi Sharma

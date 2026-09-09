@@ -3,8 +3,8 @@
 An AI-powered repository assistant that analyzes GitHub codebases and answers questions about their source code, documentation, and project structure using Retrieval-Augmented Generation (RAG).
 
 ## 🚀 Live Demo
-
-[Open the deployed application](YOUR_STREAMLIT_APP_URL)
+[
+[Open the deployed application](https://prachishr-codebase-qa-assistant-app-pfv58a.streamlit.app/)
 
 ---
 

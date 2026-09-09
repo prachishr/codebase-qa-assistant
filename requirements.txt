@@ -6,11 +6,10 @@ langchain
 langchain-community
 langchain-huggingface
 langchain-text-splitters
-faiss-cpu
-langchain-community
 
+faiss-cpu
 sentence-transformers
 
 tree-sitter
-
 groq
+tree-sitter-language-pack

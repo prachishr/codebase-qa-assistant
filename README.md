@@ -5,7 +5,7 @@ An AI-powered repository assistant that analyzes GitHub codebases and answers qu
 ## 🚀 Live Demo
 [
 [Open the deployed application](https://prachishr-codebase-qa-assistant-app-pfv58a.streamlit.app/)
-
+]
 ---
 
 ## 📌 Overview
@@ -101,3 +101,7 @@ The goal is to provide a **ChatGPT-like interface for understanding software rep
                        │
                        ▼
                 Answer + Sources
+
+
+#### Author
+Prachi Sharma

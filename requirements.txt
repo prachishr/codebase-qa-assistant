@@ -15,3 +15,5 @@ groq
 tree-sitter-language-pack
 
 psycopg2-binary
+
+supabase

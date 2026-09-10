@@ -31,20 +31,45 @@ def get_connection():
     )
 
 
+# ============================================================
+# Database Initialization
+# ============================================================
+
 def initialize_database():
+
     connection = get_connection()
     cursor = connection.cursor()
+
+    # --------------------------------------------------------
+    # Conversations
+    # --------------------------------------------------------
 
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS conversations (
             id BIGSERIAL PRIMARY KEY,
+            user_id TEXT,
             title TEXT NOT NULL,
             repository_url TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """
     )
+
+    # --------------------------------------------------------
+    # Add user_id to existing installations
+    # --------------------------------------------------------
+
+    cursor.execute(
+        """
+        ALTER TABLE conversations
+        ADD COLUMN IF NOT EXISTS user_id TEXT;
+        """
+    )
+
+    # --------------------------------------------------------
+    # Messages
+    # --------------------------------------------------------
 
     cursor.execute(
         """
@@ -61,23 +86,51 @@ def initialize_database():
         """
     )
 
+    # --------------------------------------------------------
+    # Index for faster user-specific conversation lookup
+    # --------------------------------------------------------
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_conversations_user_id
+        ON conversations(user_id);
+        """
+    )
+
     connection.commit()
 
     cursor.close()
     connection.close()
 
 
-def create_conversation(title="New Conversation", repository_url=""):
+# ============================================================
+# Conversations
+# ============================================================
+
+def create_conversation(
+    user_id,
+    title="New Conversation",
+    repository_url=""
+):
+
     connection = get_connection()
     cursor = connection.cursor()
 
     cursor.execute(
         """
-        INSERT INTO conversations (title, repository_url)
-        VALUES (%s, %s)
+        INSERT INTO conversations (
+            user_id,
+            title,
+            repository_url
+        )
+        VALUES (%s, %s, %s)
         RETURNING id;
         """,
-        (title, repository_url)
+        (
+            user_id,
+            title,
+            repository_url
+        )
     )
 
     conversation_id = cursor.fetchone()[0]
@@ -91,10 +144,12 @@ def create_conversation(title="New Conversation", repository_url=""):
 
 
 def update_conversation(
+    user_id,
     conversation_id,
     title=None,
     repository_url=None
 ):
+
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -105,9 +160,15 @@ def update_conversation(
             UPDATE conversations
             SET title = %s,
                 repository_url = %s
-            WHERE id = %s;
+            WHERE id = %s
+              AND user_id = %s;
             """,
-            (title, repository_url, conversation_id)
+            (
+                title,
+                repository_url,
+                conversation_id,
+                user_id
+            )
         )
 
     elif title is not None:
@@ -116,9 +177,14 @@ def update_conversation(
             """
             UPDATE conversations
             SET title = %s
-            WHERE id = %s;
+            WHERE id = %s
+              AND user_id = %s;
             """,
-            (title, conversation_id)
+            (
+                title,
+                conversation_id,
+                user_id
+            )
         )
 
     elif repository_url is not None:
@@ -127,9 +193,14 @@ def update_conversation(
             """
             UPDATE conversations
             SET repository_url = %s
-            WHERE id = %s;
+            WHERE id = %s
+              AND user_id = %s;
             """,
-            (repository_url, conversation_id)
+            (
+                repository_url,
+                conversation_id,
+                user_id
+            )
         )
 
     connection.commit()
@@ -138,17 +209,55 @@ def update_conversation(
     connection.close()
 
 
+# ============================================================
+# Messages
+# ============================================================
+
 def save_message(
+    user_id,
     conversation_id,
     role,
     content,
     source_files=None
 ):
+
     connection = get_connection()
     cursor = connection.cursor()
 
     if source_files is None:
         source_files = []
+
+    # --------------------------------------------------------
+    # Make sure the conversation belongs to this user
+    # --------------------------------------------------------
+
+    cursor.execute(
+        """
+        SELECT id
+        FROM conversations
+        WHERE id = %s
+          AND user_id = %s;
+        """,
+        (
+            conversation_id,
+            user_id
+        )
+    )
+
+    conversation = cursor.fetchone()
+
+    if conversation is None:
+
+        cursor.close()
+        connection.close()
+
+        raise PermissionError(
+            "You do not have access to this conversation."
+        )
+
+    # --------------------------------------------------------
+    # Save message
+    # --------------------------------------------------------
 
     cursor.execute(
         """
@@ -174,7 +283,12 @@ def save_message(
     connection.close()
 
 
-def get_conversations():
+# ============================================================
+# Get User Conversations
+# ============================================================
+
+def get_conversations(user_id):
+
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -186,8 +300,10 @@ def get_conversations():
             repository_url,
             created_at
         FROM conversations
+        WHERE user_id = %s
         ORDER BY created_at DESC;
-        """
+        """,
+        (user_id,)
     )
 
     conversations = cursor.fetchall()
@@ -198,21 +314,35 @@ def get_conversations():
     return conversations
 
 
-def get_messages(conversation_id):
+# ============================================================
+# Get Messages
+# ============================================================
+
+def get_messages(
+    user_id,
+    conversation_id
+):
+
     connection = get_connection()
     cursor = connection.cursor()
 
     cursor.execute(
         """
         SELECT
-            role,
-            content,
-            source_files
-        FROM messages
-        WHERE conversation_id = %s
-        ORDER BY created_at ASC, id ASC;
+            m.role,
+            m.content,
+            m.source_files
+        FROM messages m
+        INNER JOIN conversations c
+            ON m.conversation_id = c.id
+        WHERE m.conversation_id = %s
+          AND c.user_id = %s
+        ORDER BY m.created_at ASC, m.id ASC;
         """,
-        (conversation_id,)
+        (
+            conversation_id,
+            user_id
+        )
     )
 
     rows = cursor.fetchall()
@@ -237,16 +367,29 @@ def get_messages(conversation_id):
 
     return messages
 
-def delete_conversation(conversation_id):
+
+# ============================================================
+# Delete Conversation
+# ============================================================
+
+def delete_conversation(
+    user_id,
+    conversation_id
+):
+
     connection = get_connection()
     cursor = connection.cursor()
 
     cursor.execute(
         """
         DELETE FROM conversations
-        WHERE id = %s;
+        WHERE id = %s
+          AND user_id = %s;
         """,
-        (conversation_id,)
+        (
+            conversation_id,
+            user_id
+        )
     )
 
     connection.commit()

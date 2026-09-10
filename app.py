@@ -6,6 +6,7 @@ import json
 import streamlit as st
 from dotenv import load_dotenv
 from git import Repo
+from supabase import create_client
 
 from database import (
     initialize_database,
@@ -346,19 +347,227 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Database Initialization
+# Supabase Authentication
 
-try:
+def get_supabase_client():
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_KEY")
 
-    initialize_database()
+    # Streamlit Cloud fallback.
+    if not supabase_url or not supabase_key:
+        try:
+            supabase_url = st.secrets["SUPABASE_URL"]
+            supabase_key = st.secrets["SUPABASE_KEY"]
+        except Exception:
+            pass
 
-except Exception as e:
+    if not supabase_url or not supabase_key:
+        st.error(
+            "Supabase configuration is missing. "
+            "Add SUPABASE_URL and SUPABASE_KEY to your .env file "
+            "or Streamlit secrets."
+        )
+        st.stop()
 
-    st.error(
-        f"Database initialization failed: {e}"
-    )
+    return create_client(supabase_url, supabase_key)
 
+
+supabase = get_supabase_client()
+
+
+def show_auth_screen():
+    st.markdown("""
+    <style>
+    .auth-bg {
+        position: fixed; inset: 0; pointer-events: none; z-index: 0;
+        background: radial-gradient(ellipse at 50% 30%, rgba(124,92,255,0.10), transparent 55%);
+    }
+    .auth-hero { text-align: center; margin: 3rem auto 2rem auto; }
+    .auth-hero-icon {
+        width: 52px; height: 52px; margin: 0 auto 1rem auto;
+        border-radius: 14px; display: flex; align-items: center;
+        justify-content: center; background: #171c2a;
+        border: 1px solid #30384d; color: #9b8cff; font-size: 1.5rem;
+    }
+    .auth-hero-title {
+        font-size: 1.9rem; font-weight: 750; letter-spacing: -0.8px;
+        color: #f4f6fb; margin: 0 0 0.5rem 0;
+    }
+    .auth-hero-sub { color: #8f98ab; font-size: 0.92rem; line-height: 1.55; }
+
+    div[data-testid="stColumn"]:has(div.stTabs) {
+        background: #111522; border: 1px solid #252b3b;
+        border-radius: 16px; padding: 2rem 2rem 1.5rem 2rem;
+        box-shadow: 0 20px 50px -20px rgba(0,0,0,0.6);
+    }
+    div[data-testid="stColumn"]:has(div.stTabs) .stTabs [data-baseweb="tab-list"] {
+        gap: 8px; justify-content: center;
+        border-bottom: 1px solid #252b3b; margin-bottom: 1.2rem;
+    }
+    div[data-testid="stColumn"]:has(div.stTabs) .stTabs [data-baseweb="tab"] {
+        background: transparent; color: #8f96a8; font-weight: 600;
+        font-size: 0.88rem; padding: 8px 16px;
+    }
+    div[data-testid="stColumn"]:has(div.stTabs) .stTabs [aria-selected="true"] {
+        color: #fff !important; background: rgba(124,92,255,0.08) !important;
+    }
+    div[data-testid="stColumn"]:has(div.stTabs) .stTabs [data-baseweb="tab-highlight"] {
+        background-color: #7c5cff !important; height: 2px !important;
+    }
+    div[data-testid="stColumn"]:has(div.stTabs) .stTextInput input {
+        background: #0d1220 !important; border: 1px solid #2b3448 !important;
+        border-radius: 9px !important; color: #e8ebf2 !important;
+        padding: 11px 13px !important;
+    }
+    div[data-testid="stColumn"]:has(div.stTabs) .stTextInput input:focus {
+        border-color: #7c5cff !important;
+        box-shadow: 0 0 0 3px rgba(124,92,255,0.12) !important;
+    }
+    div[data-testid="stColumn"]:has(div.stTabs) .stButton > button {
+        width: 100%; background: #7c5cff; color: #fff;
+        border: 1px solid #7c5cff; border-radius: 9px;
+        padding: 10px 16px; font-weight: 600; font-size: 0.9rem;
+        transition: all 0.15s ease;
+    }
+    div[data-testid="stColumn"]:has(div.stTabs) .stButton > button:hover {
+        background: #8d70ff; border-color: #8d70ff;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px -8px rgba(124,92,255,0.5); color: #fff;
+    }
+    </style>
+    <div class="auth-bg"></div>
+    <div class="auth-hero">
+        <div class="auth-hero-icon">⌘</div>
+        <div class="auth-hero-title">Codebase QA Assistant</div>
+        <div class="auth-hero-sub">
+            Sign in to analyze repositories and keep your
+            conversation history private to your account.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    _, auth_col, _ = st.columns([1, 1.3, 1])
+
+
+    with auth_col:
+        login_tab, signup_tab = st.tabs(["🔐 Login", "✨ Sign Up"])
+
+        with login_tab:
+            login_email = st.text_input("Email", key="login_email")
+            login_password = st.text_input(
+                "Password",
+                type="password",
+                key="login_password"
+            )
+
+            if st.button(
+                "Login",
+                use_container_width=True,
+                key="login_button"
+            ):
+                if not login_email.strip() or not login_password:
+                    st.error("Please enter your email and password.")
+                else:
+                    try:
+                        response = supabase.auth.sign_in_with_password(
+                            {
+                                "email": login_email.strip(),
+                                "password": login_password
+                            }
+                        )
+
+                        if response.user is None:
+                            st.error(
+                                "Login failed. Please check your credentials."
+                            )
+                        else:
+                            st.session_state.user_id = str(response.user.id)
+                            st.session_state.user_email = (
+                                response.user.email or login_email.strip()
+                            )
+                            st.session_state.authenticated = True
+                            st.rerun()
+
+                    except Exception as e:
+                        st.error(f"Login failed: {str(e)}")
+
+        with signup_tab:
+            signup_email = st.text_input("Email", key="signup_email")
+            signup_password = st.text_input(
+                "Password",
+                type="password",
+                key="signup_password"
+            )
+            signup_confirm = st.text_input(
+                "Confirm Password",
+                type="password",
+                key="signup_confirm"
+            )
+
+            if st.button(
+                "Create Account",
+                use_container_width=True,
+                key="signup_button"
+            ):
+                if not signup_email.strip() or not signup_password:
+                    st.error("Please enter your email and password.")
+                elif len(signup_password) < 6:
+                    st.error("Password must be at least 6 characters.")
+                elif signup_password != signup_confirm:
+                    st.error("Passwords do not match.")
+                else:
+                    try:
+                        response = supabase.auth.sign_up(
+                            {
+                                "email": signup_email.strip(),
+                                "password": signup_password
+                            }
+                        )
+
+                        if (
+                            response.user is not None
+                            and response.session is not None
+                        ):
+                            st.session_state.user_id = str(response.user.id)
+                            st.session_state.user_email = (
+                                response.user.email or signup_email.strip()
+                            )
+                            st.session_state.authenticated = True
+                            st.rerun()
+                        else:
+                            st.success(
+                                "Account created. Please check your email "
+                                "to verify your account, then log in."
+                            )
+
+                    except Exception as e:
+                        st.error(f"Sign up failed: {str(e)}")
+
+
+# Session State
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if "user_id" not in st.session_state:
+    st.session_state.user_id = None
+
+if "user_email" not in st.session_state:
+    st.session_state.user_email = ""
+
+
+# Require authentication before accessing the application.
+if not st.session_state.authenticated or not st.session_state.user_id:
+    show_auth_screen()
     st.stop()
+
+
+# Database Initialization
+try:
+    initialize_database()
+except Exception as e:
+    st.error(f"Database initialization failed: {e}")
+    st.stop()
+
 
 # Session State
 if "repo_ready" not in st.session_state:
@@ -788,7 +997,7 @@ def generate_chat_title(question):
 
 def load_previous_chat(conversation_id):
 
-    conversations = get_conversations()
+    conversations = get_conversations(st.session_state.user_id)
 
     selected = None
 
@@ -811,6 +1020,7 @@ def load_previous_chat(conversation_id):
     repository_url = selected[2] or ""
 
     messages = get_messages(
+        st.session_state.user_id,
         conversation_id
     )
 
@@ -928,6 +1138,44 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
+    # Account
+    st.markdown(
+        '<div class="sidebar-heading">👤 Account</div>',
+        unsafe_allow_html=True
+    )
+
+    st.caption(st.session_state.user_email)
+
+    if st.button(
+        "Logout",
+        use_container_width=True,
+        key="logout_button"
+    ):
+        try:
+            supabase.auth.sign_out()
+        except Exception:
+            pass
+
+        for key in [
+            "authenticated",
+            "user_id",
+            "user_email",
+            "repo_ready",
+            "repo_url",
+            "messages",
+            "conversation_id",
+            "conversation_title",
+            "analyzing",
+            "restore_repository",
+            "pending_analysis_url",
+            "repo_stats"
+        ]:
+            st.session_state.pop(key, None)
+
+        st.rerun()
+
+    st.divider()
+
     # New Chat
 
     if st.button(
@@ -1021,7 +1269,7 @@ with st.sidebar:
 
     try:
 
-        conversations = get_conversations()
+        conversations = get_conversations(st.session_state.user_id)
 
         if conversations:
 
@@ -1076,6 +1324,7 @@ with st.sidebar:
                     ):
 
                         delete_conversation(
+                            st.session_state.user_id,
                             conversation_id
                         )
 
@@ -1508,6 +1757,7 @@ if st.session_state.repo_ready:
             )
 
             conversation_id = create_conversation(
+                st.session_state.user_id,
                 title=title,
                 repository_url=st.session_state.repo_url
             )
@@ -1525,6 +1775,7 @@ if st.session_state.repo_ready:
             )
 
             update_conversation(
+                st.session_state.user_id,
                 st.session_state.conversation_id,
                 title=title,
                 repository_url=st.session_state.repo_url
@@ -1540,6 +1791,7 @@ if st.session_state.repo_ready:
         )
 
         save_message(
+            st.session_state.user_id,
             st.session_state.conversation_id,
             "user",
             question
@@ -1583,6 +1835,7 @@ if st.session_state.repo_ready:
                 )
 
                 save_message(
+                    st.session_state.user_id,
                     st.session_state.conversation_id,
                     "assistant",
                     answer,
@@ -1604,6 +1857,7 @@ if st.session_state.repo_ready:
                 )
 
                 save_message(
+                    st.session_state.user_id,
                     st.session_state.conversation_id,
                     "assistant",
                     error_message,

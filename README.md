@@ -521,7 +521,7 @@ This project demonstrates practical implementation of:
 
 ## 👩‍💻 Author
 
-**Prachi Shrivastava**
+**Prachi Sharma**
 
 GitHub:  
 https://github.com/prachishr/codebase-qa-assistant

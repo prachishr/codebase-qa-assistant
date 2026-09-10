@@ -1,4 +1,4 @@
-# 🧠 Codebase QA Assistant
+## <img src="app_icon.png" width="35" /> Codebase QA Assistant
 
 > **An AI-powered codebase companion that lets you understand a GitHub repository through natural-language questions.**
 
@@ -10,6 +10,11 @@
 [![Groq](https://img.shields.io/badge/Groq-LLM_Inference-F55036)](https://groq.com/)
 
 ---
+## 🚀 Live Demo
+
+**Streamlit App:** [Live App](https://prachishr-codebase-qa-assistant-app-pfv58a.streamlit.app/)
+
+**GitHub:** [prachishr/codebase-qa-assistant](https://github.com/prachishr/codebase-qa-assistant)
 
 ## 🚀 Overview
 

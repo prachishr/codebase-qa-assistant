@@ -1,60 +1,59 @@
-# Codebase QA Assistant
+# 🧠 Codebase QA Assistant
+
+An AI-powered tool that lets users connect a GitHub repository and ask questions about its code, documentation, project structure, and Git information.
+
+The application uses **Retrieval-Augmented Generation (RAG)** to retrieve relevant repository content before generating answers with an LLM.
 
 ## 🚀 Live Demo
-[Open App]
 
-## 📌 Overview
+**Streamlit App:** PASTE_YOUR_STREAMLIT_URL_HERE
+
+**GitHub:** https://github.com/prachishr/codebase-qa-assistant
+
+---
 
 ## ✨ Features
-- GitHub repository analysis
-- AST-aware code understanding
-- Documentation analysis
-- Semantic search
-- FAISS vector search
-- RAG-based answers
-- Supabase authentication
-- Private user-specific conversations
-- PostgreSQL chat history
-- Source file references
 
-## 🏗️ Architecture
+- 🔐 **User Authentication** using Supabase Auth
+- 💬 **Private Conversation History** using PostgreSQL
+- 🐙 **GitHub Repository Analysis**
+- 🧩 **AST-aware Code Chunking**
+- 📚 **Documentation Processing**
+- 🔎 **Semantic & Keyword-based Retrieval**
+- 🤗 **Local Hugging Face Embeddings**
+- ⚡ **FAISS Vector Search**
+- 🤖 **Groq LLM-powered Answers**
+- 📄 **Source File References**
+- ☁️ **Streamlit Cloud Deployment**
 
-GitHub Repository
-       ↓
+---
+
+## 🏗️ How It Works
+
+```text
+User
+ ↓
+Supabase Authentication
+ ↓
+GitHub Repository URL
+ ↓
 Repository Ingestion
-       ↓
-AST / Documentation Chunking
-       ↓
+ ├── Source Code
+ ├── Documentation
+ └── Git Information
+ ↓
+AST-aware / Text Chunking
+ ↓
 Hugging Face Embeddings
-       ↓
-FAISS
-       ↓
-Semantic Retrieval
-       ↓
+ ↓
+FAISS Vector Search
+ ↓
+User Question
+ ↓
+Retrieve Relevant Repository Chunks
+ ↓
 Groq LLM
-       ↓
-Answer + Sources
-       ↓
-PostgreSQL Conversation Memory
-
-## 🛠️ Tech Stack
-
-## 📂 Project Structure
-
-## ⚙️ Installation
-
-## 🔐 Environment Variables
-
-## ▶️ Running Locally
-
-## ☁️ Deployment
-
-## 🔒 Authentication & Data Privacy
-
-## 🧠 How It Works
-
-## 📸 Screenshots
-
-## 📈 Future Improvements
-
-## 👩‍💻 Author
+ ↓
+Grounded Answer + Source Files
+ ↓
+PostgreSQL stores Conversation History

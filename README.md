@@ -6,9 +6,9 @@ The application uses **Retrieval-Augmented Generation (RAG)** to retrieve releva
 
 ## 🚀 Live Demo
 
-**Streamlit App:** PASTE_YOUR_STREAMLIT_URL_HERE
+**Streamlit App:** [Live App](https://prachishr-codebase-qa-assistant-app-pfv58a.streamlit.app/)
 
-**GitHub:** https://github.com/prachishr/codebase-qa-assistant
+**GitHub:** [prachishr/codebase-qa-assistant](https://github.com/prachishr/codebase-qa-assistant)
 
 ---
 
@@ -55,5 +55,32 @@ Retrieve Relevant Repository Chunks
 Groq LLM
  ↓
 Grounded Answer + Source Files
- ↓
-PostgreSQL stores Conversation History
+
+          ↘
+            PostgreSQL
+          Conversation History
+```
+# 📂 Project Structure
+```
+Codebase-QA-Assistant/
+│
+├── app.py
+├── ingestion.py
+├── chunking.py
+├── vector_store.py
+├── retrieval.py
+├── RAG.py
+├── database.py
+│
+├── requirements.txt
+├── README.md
+├── .gitignore
+│
+└── .env
+```
+
+### 👩‍💻 Author
+
+Prachi Sharma
+
+Github: [prachishr/codebase-qa-assistant](https://github.com/prachishr/codebase-qa-assistant)

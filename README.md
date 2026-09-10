@@ -1,4 +1,4 @@
-# 🧠 Codebase QA Assistant
+#  Codebase QA Assistant
 
 An AI-powered tool that lets users connect a GitHub repository and ask questions about its code, documentation, project structure, and Git information.
 

@@ -13,3 +13,5 @@ sentence-transformers
 tree-sitter
 groq
 tree-sitter-language-pack
+
+psycopg2-binary

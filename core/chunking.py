@@ -1,7 +1,7 @@
 import os
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from ingestion import load_repository
+from .ingestion import load_repository
 from tree_sitter_language_pack import get_parser
 
 

@@ -2,24 +2,17 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 
-from ingestion import load_repository
-from chunking import create_chunks
 
+def create_vector_store(chunks, index_path="faiss_index"):
 
-REPO_PATH = "repo"
+    if not chunks:
+        raise ValueError(
+            "No chunks provided. Cannot create vector store."
+        )
 
+    print(f"Chunks received: {len(chunks)}")
 
-def create_vector_store():
-
-    # Load repository documents
-    documents = load_repository(REPO_PATH)
-
-    # Create chunks
-    chunks = create_chunks(documents)
-
-    print(f"Documents loaded: {len(documents)}")
-    print(f"Chunks created: {len(chunks)}")
-
+    
     # Create embedding model
     print("\nLoading embedding model...")
 
@@ -54,14 +47,9 @@ def create_vector_store():
     )
 
     # Save locally
-    vector_store.save_local("faiss_index")
+    vector_store.save_local(index_path)
 
     print("\nVector database created successfully! ✅")
-    print("Saved to: faiss_index/")
+    print(f"Saved to: {index_path}/")
 
     return vector_store
-
-
-if __name__ == "__main__":
-
-    create_vector_store()

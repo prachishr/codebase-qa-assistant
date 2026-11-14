@@ -1,10 +1,9 @@
 import os
 from dotenv import load_dotenv 
-load_dotenv(r"D:\Codebase-QA-Assistant\.venv\.env")
+load_dotenv()
 from groq import Groq
 
-from retrieval import search_repository
-
+from .retrieval import search_repository
 
 MODEL_NAME = "openai/gpt-oss-20b"
 
@@ -35,7 +34,6 @@ def generate_answer(question):
 
     context = "\n\n---\n\n".join(context_parts)
 
-    load_dotenv()
 
     api_key = os.getenv("GROQ_API_KEY")
 

@@ -864,9 +864,9 @@ def detect_tech_stack(repo_path):
 # Lazy Imports
 def get_repository_functions():
 
-    from ingestion import load_repository
-    from chunking import create_chunks
-    from vector_store import create_vector_store
+    from core.ingestion import load_repository
+    from core.chunking import create_chunks
+    from core.vector_store import create_vector_store
 
     return (
         load_repository,
@@ -877,7 +877,7 @@ def get_repository_functions():
 
 def get_rag_function():
 
-    from RAG import generate_answer
+    from core.rag import generate_answer
 
     return generate_answer
 
@@ -961,7 +961,7 @@ def prepare_repository(repo_url, status_container):
         "🧠 Generating embeddings and building FAISS..."
     )
 
-    create_vector_store()
+    create_vector_store(chunks)
 
     status_container.write(
         "🔎 FAISS vector database created."

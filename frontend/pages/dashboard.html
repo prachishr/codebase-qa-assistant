@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Codebase QA Assistant</title>
+
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+
+<body class="dashboard-page">
+
+    <div class="dashboard-layout">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+
+            <div class="sidebar-header">
+                <a href="../index.html" class="logo">
+                    <span class="logo-icon">⌘</span>
+                    <span>Codebase<span class="logo-highlight">QA</span></span>
+                </a>
+
+                <button class="sidebar-close" id="closeSidebar" aria-label="Close sidebar">
+                    ×
+                </button>
+            </div>
+
+            <button class="new-chat-btn" id="newChatBtn">
+                <span>＋</span>
+                New Chat
+            </button>
+
+            <div class="sidebar-section">
+                <span class="sidebar-label">WORKSPACE</span>
+
+                <a href="#repositories" class="sidebar-link active">
+                    <span>▣</span>
+                    My Repositories
+                </a>
+            </div>
+
+            <div class="sidebar-section conversation-section">
+                <span class="sidebar-label">RECENT CONVERSATIONS</span>
+
+                <div id="conversationList" class="conversation-list">
+                    <p class="empty-conversations">
+                        Your conversations will appear here.
+                    </p>
+                </div>
+            </div>
+
+            <div class="sidebar-bottom">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">U</div>
+
+                    <div class="user-details">
+                        <span id="sidebarUsername">User</span>
+                        <small id="sidebarEmail">user@example.com</small>
+                    </div>
+
+                    <button id="logoutBtn" class="logout-btn" title="Log out">
+                        ⇥
+                    </button>
+                </div>
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN CONTENT -->
+        <main class="dashboard-main">
+
+            <!-- TOP NAVIGATION -->
+            <header class="dashboard-header">
+
+                <button class="menu-btn" id="menuBtn" aria-label="Open sidebar">
+                    ☰
+                </button>
+
+                <div class="breadcrumb">
+                    <span>Workspace</span>
+                    <span>/</span>
+                    <strong>Dashboard</strong>
+                </div>
+
+                <div class="header-status">
+                    <span class="status-dot"></span>
+                    AI Assistant
+                </div>
+
+            </header>
+
+
+            <!-- DASHBOARD CONTENT -->
+            <div class="dashboard-content">
+
+                <section class="welcome-section">
+                    <div>
+                        <span class="section-label">YOUR WORKSPACE</span>
+
+                        <h1>
+                            Welcome back,
+                            <span id="welcomeUsername">there</span>!
+                        </h1>
+
+                        <p>
+                            Connect a repository and start exploring your
+                            codebase with AI.
+                        </p>
+                    </div>
+
+                    <button class="btn btn-primary" id="addRepositoryBtn">
+                        <span>＋</span>
+                        Add Repository
+                    </button>
+                </section>
+
+
+                <!-- STATISTICS -->
+                <section class="stats-grid">
+
+                    <article class="stat-card">
+                        <div class="stat-icon">▣</div>
+                        <div>
+                            <span class="stat-label">Total Repositories</span>
+                            <h2 id="repositoryCount">0</h2>
+                        </div>
+                    </article>
+
+                    <article class="stat-card">
+                        <div class="stat-icon">◷</div>
+                        <div>
+                            <span class="stat-label">Conversations</span>
+                            <h2 id="conversationCount">0</h2>
+                        </div>
+                    </article>
+
+                    <article class="stat-card">
+                        <div class="stat-icon">✳</div>
+                        <div>
+                            <span class="stat-label">AI Assistant</span>
+                            <h2>Ready</h2>
+                        </div>
+                    </article>
+
+                </section>
+
+
+                <!-- REPOSITORIES -->
+                <section class="repositories-section" id="repositories">
+
+                    <div class="section-header">
+                        <div>
+                            <h2>My Repositories</h2>
+                            <p>Manage and explore your connected GitHub projects.</p>
+                        </div>
+
+                        <button class="btn btn-outline" id="refreshRepositoriesBtn">
+                            ↻ Refresh
+                        </button>
+                    </div>
+
+                    <div id="repositoryGrid" class="repository-grid">
+
+                        <div class="empty-state">
+                            <div class="empty-state-icon">▣</div>
+
+                            <h3>No repositories yet</h3>
+
+                            <p>
+                                Add your first GitHub repository to start
+                                asking questions about your code.
+                            </p>
+
+                            <button class="btn btn-primary" id="emptyAddRepositoryBtn">
+                                Add Your First Repository
+                            </button>
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- AI ASSISTANT INTRODUCTION -->
+                <section class="assistant-banner">
+
+                    <div class="assistant-banner-icon">✳</div>
+
+                    <div>
+                        <h2>Your codebase, explained by AI.</h2>
+
+                        <p>
+                            Ask questions about your repository, understand
+                            functions, explore project architecture and
+                            find relevant code references.
+                        </p>
+                    </div>
+
+                </section>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <!-- ADD REPOSITORY MODAL -->
+    <div class="modal-overlay" id="repositoryModal">
+
+        <div class="modal-card">
+
+            <div class="modal-header">
+                <div>
+                    <h2>Add Repository</h2>
+                    <p>Connect a public GitHub repository.</p>
+                </div>
+
+                <button class="modal-close" id="closeRepositoryModal" aria-label="Close modal">
+                    ×
+                </button>
+            </div>
+
+            <form id="repositoryForm">
+
+                <div class="form-group">
+                    <label for="repositoryName">Repository Name</label>
+
+                    <input
+                        type="text"
+                        id="repositoryName"
+                        name="name"
+                        placeholder="e.g. movie-recommender"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="githubUrl">GitHub Repository URL</label>
+
+                    <input
+                        type="url"
+                        id="githubUrl"
+                        name="github_url"
+                        placeholder="https://github.com/username/repository"
+                        required
+                    >
+                </div>
+
+                <p id="repositoryMessage" class="form-message" role="status"></p>
+
+                <button type="submit" class="btn btn-primary modal-submit">
+                    Connect Repository
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <script src="../js/api.js"></script>
+    <script src="../js/dashboard.js"></script>
+    <script src="../js/chat.js"></script>
+
+</body>
+</html>

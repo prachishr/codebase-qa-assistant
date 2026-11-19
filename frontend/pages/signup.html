@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account | Codebase QA Assistant</title>
+
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/auth.css">
+</head>
+
+<body class="auth-page">
+
+    <main class="auth-container">
+
+        <!-- Left Branding Panel -->
+        <section class="auth-branding">
+
+            <a href="../index.html" class="logo">
+                <span class="logo-icon">⌘</span>
+                <span>Codebase<span class="logo-highlight">QA</span></span>
+            </a>
+
+            <div class="branding-content">
+                <span class="section-label">START YOUR JOURNEY</span>
+
+                <h1>
+                    Make your codebase
+                    <span>easier to understand.</span>
+                </h1>
+
+                <p>
+                    Create your account and start exploring your GitHub
+                    repositories with your personal AI coding assistant.
+                </p>
+
+                <div class="branding-points">
+                    <div>✓ Connect your GitHub repositories</div>
+                    <div>✓ Ask questions about your code</div>
+                    <div>✓ Keep your conversations organized</div>
+                </div>
+            </div>
+
+            <p class="branding-footer">
+                Understand your code. Build with confidence.
+            </p>
+
+        </section>
+
+        <!-- Right Signup Form -->
+        <section class="auth-form-section">
+
+            <div class="auth-form-wrapper">
+
+                <a href="../index.html" class="back-link">
+                    ← Back to home
+                </a>
+
+                <div class="auth-heading">
+                    <h2>Create your account</h2>
+                    <p>Get started with your AI repository assistant.</p>
+                </div>
+
+                <form id="signupForm">
+
+                    <div class="form-group">
+                        <label for="username">Full name</label>
+
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            placeholder="Enter your name"
+                            autocomplete="name"
+                            minlength="3"
+                            maxlength="100"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email address</label>
+
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            placeholder="you@example.com"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Create a password"
+                            autocomplete="new-password"
+                            minlength="8"
+                            maxlength="128"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm password</label>
+
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            placeholder="Re-enter your password"
+                            autocomplete="new-password"
+                            minlength="8"
+                            maxlength="128"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" class="btn btn-primary auth-submit">
+                        Create Account
+                        <span>→</span>
+                    </button>
+
+                    <p id="signupMessage" class="form-message" role="status"></p>
+
+                </form>
+
+                <div class="auth-switch">
+                    Already have an account?
+                    <a href="login.html">Log in</a>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+
+</body>
+</html>

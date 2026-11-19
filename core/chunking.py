@@ -1,3 +1,4 @@
+
 import os
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -22,61 +23,73 @@ CODE_EXTENSIONS = {
 }
 
 
-def get_code_chunks(content, language):
+def get_code_chunks(content, language, text_splitter):
+    """
+    Try AST-based code chunking with Tree-sitter.
+    If the parser is unavailable, fall back to text-based chunking.
+    """
 
-    parser = get_parser(language)
+    try:
+        parser = get_parser(language)
 
-    tree = parser.parse(
-        content.encode("utf-8")
-    )
+        source_bytes = content.encode("utf-8")
+        tree = parser.parse(source_bytes)
 
-    root = tree.root_node
+        root = tree.root_node
+        chunks = []
 
-    chunks = []
+        interesting_nodes = {
+            "function_declaration",
+            "function_definition",
+            "method_definition",
+            "class_declaration",
+            "class_definition",
+            "method_declaration",
+            "arrow_function",
+        }
 
-    interesting_nodes = {
-        "function_declaration",
-        "function_definition",
-        "method_definition",
-        "class_declaration",
-        "class_definition",
-        "method_declaration",
-        "arrow_function",
-    }
+        def walk(node):
+            if node.type in interesting_nodes:
+                start = node.start_byte
+                end = node.end_byte
 
-    def walk(node):
+                chunk = source_bytes[start:end].decode(
+                    "utf-8",
+                    errors="ignore"
+                )
 
-        if node.type in interesting_nodes:
+                if chunk.strip():
+                    chunks.append(chunk)
 
-            start = node.start_byte
-            end = node.end_byte
+                return
 
-            chunk = content.encode(
-                "utf-8"
-            )[start:end].decode(
-                "utf-8",
-                errors="ignore"
-            )
+            for child in node.children:
+                walk(child)
 
-            if chunk.strip():
-                chunks.append(chunk)
+        walk(root)
 
-            return
+        # If AST does not find useful structures,
+        # use text-based chunking instead.
+        if not chunks:
+            chunks = text_splitter.split_text(content)
+            return chunks, "code_fallback"
 
-        for child in node.children:
-            walk(child)
+        return chunks, "ast_code"
 
-    walk(root)
+    except Exception as exc:
+        # Tree-sitter can fail if Windows blocks its DLL.
+        print(
+            f"[WARNING] Tree-sitter unavailable for "
+            f"{language}. Using text-based chunking. "
+            f"Reason: {exc}"
+        )
 
-    # If AST did not find useful structures,
-    # fall back to the complete file.
-    if not chunks:
-        chunks = [content]
+        fallback_chunks = text_splitter.split_text(content)
 
-    return chunks
+        return fallback_chunks, "code_fallback"
 
 
-def create_chunks(documents):
+def create_chunks(documents, repo_path):
 
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
@@ -85,7 +98,7 @@ def create_chunks(documents):
 
     chunks = []
 
-    repo_root = os.path.abspath("repo")
+    repo_root = os.path.abspath(repo_path)
 
     for document in documents:
 
@@ -93,9 +106,7 @@ def create_chunks(documents):
         file_path = document["path"]
         content = document["content"]
 
-        absolute_file_path = os.path.abspath(
-            file_path
-        )
+        absolute_file_path = os.path.abspath(file_path)
 
         # --------------------------------------------------
         # README project overview
@@ -123,7 +134,7 @@ def create_chunks(documents):
             })
 
         # --------------------------------------------------
-        # Code → AST-aware chunks
+        # Code → AST-aware or fallback chunks
         # --------------------------------------------------
 
         if document["type"] == "code":
@@ -132,15 +143,14 @@ def create_chunks(documents):
                 file_name
             )[1].lower()
 
-            language = CODE_EXTENSIONS.get(
-                extension
-            )
+            language = CODE_EXTENSIONS.get(extension)
 
             if language:
 
-                code_chunks = get_code_chunks(
+                code_chunks, chunking_method = get_code_chunks(
                     content,
-                    language
+                    language,
+                    text_splitter
                 )
 
                 for chunk in code_chunks:
@@ -151,7 +161,7 @@ def create_chunks(documents):
                         "file": file_name,
                         "path": file_path,
                         "source_priority": "normal",
-                        "section": "ast_code"
+                        "section": chunking_method
                     })
 
                 continue
@@ -160,16 +170,16 @@ def create_chunks(documents):
         # Documentation / Git history
         # --------------------------------------------------
 
-        text_chunks = text_splitter.split_text(
-            content
-        )
+        text_chunks = text_splitter.split_text(content)
 
         for chunk in text_chunks:
 
             if is_root_readme:
                 source_priority = "high"
+
             elif document["type"] == "documentation":
                 source_priority = "medium"
+
             else:
                 source_priority = "low"
 
@@ -189,15 +199,13 @@ if __name__ == "__main__":
 
     documents = load_repository("repo")
 
-    chunks = create_chunks(documents)
-
-    print(
-        f"Original documents: {len(documents)}"
+    chunks = create_chunks(
+        documents,
+        repo_path="repo"
     )
 
-    print(
-        f"Total chunks: {len(chunks)}"
-    )
+    print(f"Original documents: {len(documents)}")
+    print(f"Total chunks: {len(chunks)}")
 
     ast_chunks = [
         chunk
@@ -205,25 +213,24 @@ if __name__ == "__main__":
         if chunk["section"] == "ast_code"
     ]
 
-    print(
-        f"AST code chunks: {len(ast_chunks)}"
-    )
+    fallback_chunks = [
+        chunk
+        for chunk in chunks
+        if chunk["section"] == "code_fallback"
+    ]
 
-    print("\nSample AST chunks")
-    print("----------------")
+    print(f"AST code chunks: {len(ast_chunks)}")
+    print(f"Fallback code chunks: {len(fallback_chunks)}")
 
-    for chunk in ast_chunks[:5]:
+    print("\nSample code chunks")
+    print("------------------")
 
-        print(
-            f"\nFile: {chunk['file']}"
-        )
+    for chunk in chunks:
+        if chunk["type"] == "code":
+            print(f"\nFile: {chunk['file']}")
+            print(f"Section: {chunk['section']}")
+            print(chunk["content"][:700])
+            print("-" * 60)
 
-        print(
-            f"Section: {chunk['section']}"
-        )
-
-        print(
-            chunk["content"][:700]
-        )
-
-        print("-" * 60)
+            if chunk == chunks[-1]:
+                break

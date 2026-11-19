@@ -20,6 +20,60 @@ CODE_EXTENSIONS = {
 }
 
 
+IGNORED_DIRS = {
+    ".git",
+    ".venv",
+    "venv",
+    "env",
+    "node_modules",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".next",
+    "dist",
+    "build",
+    "coverage",
+    "site-packages",
+    "faiss_index"
+}
+
+MAX_FILE_SIZE = 1 * 1024 * 1024  # 1 MB
+
+
+SENSITIVE_FILE_NAMES = {
+    ".env",
+    "id_rsa",
+    "id_ed25519",
+    "id_dsa",
+    "id_ecdsa",
+    "credentials.json",
+    "secrets.json",
+    "service-account.json",
+    "config.json"
+}
+
+SENSITIVE_EXTENSIONS = {
+    ".pem",
+    ".key",
+    ".p12",
+    ".pfx"
+}
+
+
+def is_sensitive_file(filename):
+    name = filename.lower()
+    extension = os.path.splitext(name)[1]
+
+    return (
+        name in SENSITIVE_FILE_NAMES
+        or name.startswith(".env.")
+        or name.startswith("secrets.")
+        or name.startswith("credentials.")
+        or extension in SENSITIVE_EXTENSIONS
+    )
+
+
 def extract_code(repo_path):
     """
     Extract source code files from the repository.
@@ -32,23 +86,26 @@ def extract_code(repo_path):
         # Ignore unnecessary folders
         dirs[:] = [
             d for d in dirs
-            if d not in {
-                ".git",
-                ".venv",
-                "venv",
-                "node_modules",
-                "__pycache__"
-            }
+            if d.lower() not in IGNORED_DIRS
         ]
 
         for file in files:
+
+            if is_sensitive_file(file):
+                print(f"Skipping sensitive file: {file}")
+                continue
 
             extension = os.path.splitext(file)[1].lower()
 
             if extension in CODE_EXTENSIONS:
 
                 file_path = os.path.join(root, file)
-
+                try:
+                    if os.path.getsize(file_path) > MAX_FILE_SIZE:
+                        print(f"Skipping large file: {file}")
+                        continue
+                except OSError:
+                    continue
                 try:
                     with open(
                         file_path,
@@ -83,19 +140,28 @@ def extract_documentation(repo_path):
 
         dirs[:] = [
             d for d in dirs
-            if d not in {
-                ".git",
-                ".venv",
-                "venv",
-                "node_modules"
-            }
+            if d.lower() not in IGNORED_DIRS
         ]
+        
 
         for file in files:
+            if is_sensitive_file(file):
+                print(f"Skipping sensitive file: {file}")
+                continue
 
-            if file.lower().endswith((".md", ".txt")):
+            if (
+                file.lower().endswith((".md", ".txt", ".rst"))
+                or file.lower() in {"readme", "license", "changelog"}
+            ):
 
                 file_path = os.path.join(root, file)
+
+                try:
+                    if os.path.getsize(file_path) > MAX_FILE_SIZE:
+                        print(f"Skipping large file: {file}")
+                        continue
+                except OSError:
+                    continue
 
                 try:
                     with open(
@@ -131,7 +197,7 @@ def extract_git_history(repo_path):
 
         repo = Repo(repo_path)
 
-        for commit in repo.iter_commits():
+        for commit in repo.iter_commits(max_count=100):
 
             commit_text = f"""
 Commit Hash: {commit.hexsha}

@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Codebase QA Assistant</title>
+
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/auth.css">
+</head>
+
+<body class="auth-page">
+
+    <main class="auth-container">
+
+        <!-- Left Side: Branding -->
+        <section class="auth-branding">
+
+            <a href="../index.html" class="logo">
+                <span class="logo-icon">⌘</span>
+                <span>Codebase<span class="logo-highlight">QA</span></span>
+            </a>
+
+            <div class="branding-content">
+                <span class="section-label">YOUR AI CODING COMPANION</span>
+
+                <h1>
+                    Your codebase.
+                    <span>Understood.</span>
+                </h1>
+
+                <p>
+                    Ask questions, explore repositories, and understand
+                    your code with the help of AI.
+                </p>
+
+                <div class="branding-points">
+                    <div>✓ Understand complex codebases</div>
+                    <div>✓ Get AI-powered explanations</div>
+                    <div>✓ Find relevant code references</div>
+                </div>
+            </div>
+
+            <p class="branding-footer">
+                Understand your code. Build with confidence.
+            </p>
+
+        </section>
+
+        <!-- Right Side: Login Form -->
+        <section class="auth-form-section">
+
+            <div class="auth-form-wrapper">
+
+                <a href="../index.html" class="back-link">
+                    ← Back to home
+                </a>
+
+                <div class="auth-heading">
+                    <h2>Welcome back</h2>
+                    <p>Log in to continue to your workspace.</p>
+                </div>
+
+                <form id="loginForm">
+
+                    <div class="form-group">
+                        <label for="email">Email address</label>
+
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            placeholder="you@example.com"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <div class="password-label">
+                            <label for="password">Password</label>
+                        </div>
+
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" class="btn btn-primary auth-submit">
+                        Log in
+                        <span>→</span>
+                    </button>
+
+                    <p id="loginMessage" class="form-message" role="status"></p>
+
+                </form>
+
+                <div class="auth-switch">
+                    Don't have an account?
+                    <a href="signup.html">Create an account</a>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+
+</body>
+</html>

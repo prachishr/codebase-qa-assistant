@@ -1,0 +1,1078 @@
+
+/* =========================================
+   1. DASHBOARD BASE
+========================================= */
+
+.dashboard-page {
+    min-height: 100vh;
+    background: #080b14;
+    color: #f8fafc;
+}
+
+.dashboard-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* =========================================
+   2. SIDEBAR
+========================================= */
+
+.sidebar {
+    width: 265px;
+    min-width: 265px;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 25px 17px;
+    background: #0d1220;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 100;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+}
+
+.sidebar-close {
+    display: none;
+    border: none;
+    background: none;
+    color: #9ca3af;
+    font-size: 25px;
+    cursor: pointer;
+}
+
+/* =========================================
+   3. NEW CHAT BUTTON
+========================================= */
+
+.new-chat-btn {
+    width: 100%;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    border-radius: 8px;
+    background: rgba(139, 92, 246, 0.13);
+    color: #c4b5fd;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.new-chat-btn:hover {
+    background: rgba(139, 92, 246, 0.22);
+}
+
+.new-chat-btn span {
+    font-size: 20px;
+}
+
+/* =========================================
+   4. SIDEBAR SECTIONS
+========================================= */
+
+.sidebar-section {
+    margin-top: 35px;
+}
+
+.sidebar-label {
+    display: block;
+    margin-bottom: 14px;
+    padding-left: 9px;
+    color: #6b7280;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 10px;
+    border-radius: 7px;
+    color: #9ca3af;
+    font-size: 13px;
+    transition: all 0.3s ease;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+    background: rgba(139, 92, 246, 0.13);
+    color: #c4b5fd;
+}
+
+.sidebar-link span {
+    font-size: 17px;
+}
+
+.conversation-section {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.conversation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.empty-conversations {
+    padding: 10px;
+    color: #6b7280;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+/* =========================================
+   5. USER PROFILE
+========================================= */
+
+.sidebar-bottom {
+    padding-top: 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.user-details {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.user-details span {
+    color: #e5e7eb;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.user-details small {
+    overflow: hidden;
+    color: #6b7280;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.logout-btn {
+    border: none;
+    background: none;
+    color: #9ca3af;
+    font-size: 21px;
+    cursor: pointer;
+}
+
+.logout-btn:hover {
+    color: #f87171;
+}
+
+/* =========================================
+   6. MAIN CONTENT
+========================================= */
+
+.dashboard-main {
+    min-width: 0;
+    flex: 1;
+}
+
+.dashboard-header {
+    height: 72px;
+    padding: 0 45px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(8, 11, 20, 0.85);
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.breadcrumb strong {
+    color: #e5e7eb;
+    font-weight: 600;
+}
+
+.header-status {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #a1a1aa;
+    font-size: 11px;
+}
+
+.menu-btn {
+    display: none;
+    border: none;
+    background: none;
+    color: white;
+    font-size: 23px;
+    cursor: pointer;
+}
+
+/* =========================================
+   7. DASHBOARD CONTENT
+========================================= */
+
+.dashboard-content {
+    max-width: 1450px;
+    margin: 0 auto;
+    padding: 45px;
+}
+
+.welcome-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.welcome-section h1 {
+    margin-top: 12px;
+    font-size: clamp(25px, 3vw, 34px);
+    letter-spacing: -1.2px;
+}
+
+.welcome-section h1 span {
+    color: #a78bfa;
+}
+
+.welcome-section p {
+    margin-top: 10px;
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+.welcome-section .btn {
+    flex-shrink: 0;
+}
+
+/* =========================================
+   8. STATISTICS CARDS
+========================================= */
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-top: 40px;
+}
+
+.stat-card {
+    min-height: 115px;
+    padding: 23px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 11px;
+    background: #101522;
+}
+
+.stat-icon {
+    width: 45px;
+    height: 45px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: rgba(139, 92, 246, 0.14);
+    color: #c4b5fd;
+    font-size: 22px;
+}
+
+.stat-label {
+    color: #9ca3af;
+    font-size: 11px;
+}
+
+.stat-card h2 {
+    margin-top: 5px;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+/* =========================================
+   9. REPOSITORY SECTION
+========================================= */
+
+.repositories-section {
+    margin-top: 55px;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 23px;
+}
+
+.section-header h2 {
+    font-size: 20px;
+    letter-spacing: -0.5px;
+}
+
+.section-header p {
+    margin-top: 7px;
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+.repository-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+/* =========================================
+   10. EMPTY STATE
+========================================= */
+
+.empty-state {
+    grid-column: 1 / -1;
+    min-height: 280px;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    background: rgba(16, 21, 34, 0.5);
+}
+
+.empty-state-icon {
+    width: 58px;
+    height: 58px;
+    display: grid;
+    place-items: center;
+    border-radius: 15px;
+    background: rgba(139, 92, 246, 0.13);
+    color: #c4b5fd;
+    font-size: 29px;
+}
+
+.empty-state h3 {
+    margin-top: 20px;
+    font-size: 16px;
+}
+
+.empty-state p {
+    max-width: 350px;
+    margin-top: 9px;
+    margin-bottom: 22px;
+    color: #9ca3af;
+    font-size: 12px;
+    line-height: 1.8;
+}
+
+/* =========================================
+   11. ASSISTANT BANNER
+========================================= */
+
+.assistant-banner {
+    margin-top: 40px;
+    padding: 27px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 12px;
+    background:
+        linear-gradient(
+            110deg,
+            rgba(139, 92, 246, 0.12),
+            rgba(99, 102, 241, 0.04)
+        );
+}
+
+.assistant-banner-icon {
+    width: 49px;
+    height: 49px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: rgba(139, 92, 246, 0.18);
+    color: #c4b5fd;
+    font-size: 25px;
+}
+
+.assistant-banner h2 {
+    font-size: 15px;
+}
+
+.assistant-banner p {
+    max-width: 700px;
+    margin-top: 7px;
+    color: #9ca3af;
+    font-size: 12px;
+    line-height: 1.8;
+}
+
+/* =========================================
+   12. ADD REPOSITORY MODAL
+========================================= */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(5px);
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-card {
+    width: 100%;
+    max-width: 470px;
+    padding: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    background: #111827;
+    box-shadow: 0 20px 70px rgba(0, 0, 0, 0.4);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 28px;
+}
+
+.modal-header h2 {
+    font-size: 21px;
+}
+
+.modal-header p {
+    margin-top: 7px;
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+.modal-close {
+    border: none;
+    background: none;
+    color: #9ca3af;
+    font-size: 26px;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    color: white;
+}
+
+#repositoryForm {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.modal-submit {
+    width: 100%;
+    height: 47px;
+    border: none;
+    font-family: inherit;
+}
+
+/* =========================================
+   13. RESPONSIVE DESIGN
+========================================= */
+
+@media (max-width: 1000px) {
+    .sidebar {
+        width: 235px;
+        min-width: 235px;
+    }
+
+    .dashboard-content {
+        padding: 35px 25px;
+    }
+
+    .dashboard-header {
+        padding: 0 25px;
+    }
+}
+
+@media (max-width: 760px) {
+    .sidebar {
+        position: fixed;
+        left: -270px;
+        width: 260px;
+        min-width: 260px;
+        transition: left 0.3s ease;
+    }
+
+    .sidebar.open {
+        left: 0;
+    }
+
+    .sidebar-close {
+        display: block;
+    }
+
+    .menu-btn {
+        display: block;
+    }
+
+    .dashboard-header {
+        padding: 0 18px;
+        gap: 15px;
+    }
+
+    .dashboard-content {
+        padding: 30px 18px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-top: 30px;
+    }
+
+    .repository-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .welcome-section {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .breadcrumb {
+        gap: 6px;
+        font-size: 10px;
+    }
+
+    .header-status {
+        font-size: 0;
+    }
+
+    .header-status .status-dot {
+        width: 9px;
+        height: 9px;
+    }
+
+    .section-header {
+        align-items: flex-start;
+    }
+
+    .section-header .btn {
+        padding: 9px 11px;
+        font-size: 11px;
+    }
+
+    .assistant-banner {
+        align-items: flex-start;
+        padding: 20px;
+    }
+
+    .modal-card {
+        padding: 22px;
+    }
+}
+
+
+/* =========================================
+   DYNAMIC REPOSITORY CARDS
+========================================= */
+
+.repository-card {
+    padding: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 11px;
+    background: #101522;
+    transition: border-color 0.3s ease;
+}
+
+.repository-card:hover {
+    border-color: rgba(167, 139, 250, 0.4);
+}
+
+.repository-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.repository-card-icon {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    background: rgba(139, 92, 246, 0.14);
+    color: #c4b5fd;
+    font-size: 21px;
+}
+
+.repository-card-header h3 {
+    font-size: 15px;
+}
+
+.repository-card > p {
+    margin-top: 15px;
+    overflow-wrap: anywhere;
+    color: #9ca3af;
+    font-size: 11px;
+}
+
+.repository-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin-top: 22px;
+}
+
+.repository-actions .btn {
+    padding: 9px 13px;
+    font-size: 11px;
+}
+
+.repository-actions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+
+
+/* =========================================
+   14. AI CHAT INTERFACE
+========================================= */
+
+.chat-section {
+    margin-top: 45px;
+    min-height: 650px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    background: #0d1220;
+    overflow: hidden;
+    scroll-margin-top: 20px;
+}
+
+/* Chat Header */
+
+.chat-header {
+    padding: 22px 26px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.chat-header h2 {
+    margin-top: 7px;
+    font-size: 19px;
+}
+
+.chat-header p {
+    margin-top: 5px;
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+/* Chat Messages */
+
+.chat-messages {
+    flex: 1;
+    min-height: 350px;
+    max-height: 600px;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    overflow-y: auto;
+}
+
+/* Welcome Screen */
+
+.chat-welcome {
+    margin: auto;
+    max-width: 500px;
+    padding: 35px 15px;
+    text-align: center;
+}
+
+.chat-welcome-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 20px;
+    display: grid;
+    place-items: center;
+    border-radius: 17px;
+    background: rgba(139, 92, 246, 0.15);
+    color: #c4b5fd;
+    font-size: 30px;
+}
+
+.chat-welcome h3 {
+    font-size: 21px;
+}
+
+.chat-welcome > p {
+    margin-top: 10px;
+    color: #9ca3af;
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+/* Suggested Questions */
+
+.suggested-questions {
+    margin-top: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.suggested-questions button {
+    padding: 11px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: #151c2c;
+    color: #c4b5fd;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.suggested-questions button:hover {
+    border-color: #8b5cf6;
+    background: rgba(139, 92, 246, 0.12);
+}
+
+/* Individual Messages */
+
+.chat-message {
+    max-width: 85%;
+    padding: 17px 19px;
+    border-radius: 11px;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+}
+
+.user-message {
+    align-self: flex-end;
+    background: #30245a;
+    color: #f5f3ff;
+    border: 1px solid rgba(167, 139, 250, 0.2);
+}
+
+.ai-message {
+    align-self: flex-start;
+    width: 100%;
+    max-width: 90%;
+    background: #151c2c;
+    color: #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.message-label {
+    margin-bottom: 10px;
+    color: #c4b5fd;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.ai-answer {
+    white-space: pre-wrap;
+    line-height: 1.9;
+}
+
+/* Source References */
+
+.message-sources {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.message-sources h4 {
+    margin-bottom: 11px;
+    color: #c4b5fd;
+    font-size: 12px;
+}
+
+.source-card {
+    margin-top: 8px;
+    padding: 11px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 7px;
+    background: #0d1220;
+}
+
+.source-card strong {
+    color: #e5e7eb;
+    font-size: 11px;
+}
+
+.source-card small {
+    color: #9ca3af;
+    font-size: 10px;
+    overflow-wrap: anywhere;
+}
+
+/* Loading Message */
+
+.loading-message {
+    color: #c4b5fd;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Chat Input */
+
+.chat-input-area {
+    margin: 0 25px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    border-radius: 11px;
+    background: #151c2c;
+    transition: border-color 0.3s ease;
+}
+
+.chat-input-area:focus-within {
+    border-color: #8b5cf6;
+}
+
+.chat-input-area textarea {
+    flex: 1;
+    min-height: 40px;
+    max-height: 130px;
+    padding: 10px 5px;
+    resize: vertical;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: white;
+    font-family: inherit;
+    font-size: 13px;
+}
+
+.chat-input-area textarea::placeholder {
+    color: #6b7280;
+}
+
+.chat-input-area button {
+    width: 39px;
+    height: 39px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    color: white;
+    font-size: 23px;
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+}
+
+.chat-input-area button:hover {
+    opacity: 0.85;
+}
+
+.chat-input-area button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.chat-disclaimer {
+    padding: 12px 20px 18px;
+    color: #6b7280;
+    font-size: 10px;
+    text-align: center;
+}
+
+/* =========================================
+   15. CHAT RESPONSIVENESS
+========================================= */
+
+@media (max-width: 760px) {
+
+    .chat-section {
+        margin-top: 30px;
+        min-height: 600px;
+    }
+
+    .chat-header {
+        padding: 18px;
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .chat-messages {
+        padding: 20px 15px;
+    }
+
+    .chat-message,
+    .ai-message {
+        max-width: 100%;
+    }
+
+    .chat-input-area {
+        margin: 0 12px;
+    }
+
+    .chat-disclaimer {
+        font-size: 9px;
+    }
+
+}
+
+@media (max-width: 480px) {
+
+    .chat-header h2 {
+        font-size: 16px;
+    }
+
+    .chat-welcome h3 {
+        font-size: 18px;
+    }
+
+    .suggested-questions {
+        flex-direction: column;
+    }
+
+    .suggested-questions button {
+        width: 100%;
+    }
+
+}
+
+
+/* =========================================
+   CONVERSATION HISTORY SIDEBAR
+========================================= */
+
+.conversation-item {
+    width: 100%;
+    padding: 11px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.conversation-item:hover,
+.conversation-item.active {
+    border-color: rgba(167, 139, 250, 0.15);
+    background: rgba(139, 92, 246, 0.12);
+}
+
+.conversation-title {
+    width: 100%;
+    overflow: hidden;
+    color: #e5e7eb;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.conversation-repository {
+    overflow: hidden;
+    max-width: 100%;
+    color: #9ca3af;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.conversation-item:hover .conversation-title,
+.conversation-item.active .conversation-title {
+    color: #c4b5fd;
+}
+
+
+/* Improve text visibility on light buttons */
+.btn-outline {
+    color: #1e293b !important;
+    font-weight: 600;
+}
+
+.btn-outline:hover {
+    color: #111827 !important;
+}
+
+/* Keep repository action buttons readable */
+.repository-actions .btn-outline {
+    color: #1e293b !important;
+}
+
+/* Back to Dashboard button */
+.chat-header .btn-outline {
+    color: #1e293b !important;
+}
+

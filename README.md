@@ -1,168 +1,177 @@
+
 # Codebase QA Assistant
 
-An AI-powered codebase companion that helps developers understand GitHub
-repositories through natural-language questions. It uses
-Retrieval-Augmented Generation (RAG) to retrieve relevant code and
-documentation before generating repository-grounded answers.
+An AI-powered codebase companion that helps developers understand GitHub repositories through natural-language questions. It uses Retrieval-Augmented Generation (RAG) to retrieve relevant code and documentation before generating repository-grounded answers.
 
+**GitHub Repository:** [prachishr/codebase-qa-assistant](https://github.com/prachishr/codebase-qa-assistant)
 
+---
 
+## Overview
 
+Codebase QA Assistant turns a GitHub repository into a searchable knowledge base. Users can connect a repository and ask questions about its purpose, implementation, architecture, functions, and documentation.
 
+Instead of sending an entire repository to an LLM, the application:
 
-GitHub:
-[prachishr](https://github.com/prachishr/codebase-qa-assistant)
+1. Clones and processes the repository.
+2. Extracts relevant source code and documentation.
+3. Splits content into meaningful chunks.
+4. Generates vector embeddings.
+5. Retrieves relevant context using FAISS.
+6. Sends the selected context to a Groq-hosted language model.
+7. Returns answers based on the retrieved repository content.
 
-### Overview
-Codebase QA Assistant turns a public GitHub repository into a searchable
-knowledge base. Users can connect a repository and ask questions about
-its purpose, implementation, architecture, functions, and documentation.
+The application also provides user authentication and PostgreSQL-backed conversation history, allowing users to revisit previous chats.
 
-Instead of sending an entire repository to an LLM, the application: 1.
-Clones and processes the repository. 2. Extracts relevant source code,
-documentation, and available Git information. 3. Splits content into
-meaningful chunks. 4. Generates vector embeddings. 5. Retrieves relevant
-context using the retrieval layer and FAISS. 6. Sends the selected
-context to a Groq-hosted language model. 7. Returns an answer grounded
-in the repository, with source-file references.
+---
 
-The application also provides user authentication and PostgreSQL-backed
-conversation history, allowing users to revisit previous chats.
-Features
-- User authentication: Sign-up and login through the FastAPI
-  backend.
-- GitHub repository connection: Clone and analyze supported public
-  repositories.
-- Repository-aware question answering: Ask questions about the
-  connected codebase.
-- Code and documentation ingestion: Process source files and
-  project documentation.
-- AST-aware code chunking: Preserve useful code structures such as
-  functions, methods, and classes where supported.
-- Semantic search: Generate embeddings with
-  sentence-transformers/all-MiniLM-L6-v2.
-- FAISS vector search: Retrieve relevant repository chunks
-  efficiently.
-- Hybrid retrieval logic: Combine project-overview, keyword,
-  code-symbol, and semantic retrieval strategies.
-- Groq-powered responses: Generate answers using retrieved
-  repository context.
-- Source references: Show relevant source files alongside answers.
-- Persistent conversations: Store chat history in PostgreSQL.
-- Previous chats: Reopen earlier conversations and see their
-  associated repository.
+## Features
 
-### Architecture
+- **User Authentication:** Sign-up and login through the FastAPI backend.
+- **GitHub Repository Connection:** Clone and analyze supported public repositories.
+- **Repository-Aware Question Answering:** Ask questions about the connected codebase.
+- **Code and Documentation Ingestion:** Process source files and project documentation.
+- **AST-Aware Code Chunking:** Identify meaningful code structures such as functions, methods, and classes where supported.
+- **Semantic Search:** Generate embeddings using Sentence Transformers.
+- **FAISS Vector Search:** Retrieve relevant repository chunks.
+- **Hybrid Retrieval:** Combine keyword, code-symbol, project-overview, and semantic retrieval strategies.
+- **Groq-Powered Responses:** Generate answers using retrieved repository context.
+- **Source References:** Display relevant source files alongside answers.
+- **Persistent Conversations:** Store chat history in PostgreSQL.
+- **Previous Chats:** Reopen earlier conversations and view their associated repository.
+
+---
+
+## Architecture
+
+The application follows a Retrieval-Augmented Generation (RAG) architecture to answer questions about GitHub repositories.
+
 ```mermaid
 flowchart TD
-    A[User] --> B[HTML / CSS / JavaScript Frontend]
+    A[User] --> B[Frontend<br/>HTML, CSS, JavaScript]
     B --> C[FastAPI Backend]
 
-    C --> D[Authentication API]
-    C --> E[GitHub Repository API]
-    C --> F[Conversation API]
+    C --> D[Authentication]
+    C --> E[Repository Management]
+    C --> F[Conversation Management]
 
-    E --> G[Repository Ingestion]
-    G --> H[Source Code]
-    G --> I[Documentation]
-    G --> J[Git Information]
+    E --> G[GitHub Repository]
+    G --> H[Code and Documentation Ingestion]
+    H --> I[AST-Aware Chunking]
+    I --> J[Text Embeddings<br/>Sentence Transformers]
+    J --> K[FAISS Vector Store]
 
-    H --> K[AST-aware Code Chunking]
-    I --> L[Text Chunking]
-    J --> L
-    K --> M[Repository Chunks]
-    L --> M
+    B --> L[User Question]
+    L --> C
+    C --> M[Retrieval Service]
+    K --> M
+    M --> N[Relevant Repository Context]
+    N --> O[Groq LLM<br/>openai/gpt-oss-20b]
+    O --> P[Generated Answer]
+    P --> B
 
-    M --> N[Hugging Face Embeddings]
-    N --> O[FAISS Vector Index]
-
-    B --> P[User Question]
-    P --> C
-    C --> Q[Retrieval Layer]
-    O --> Q
-    Q --> R[Relevant Repository Context]
-    R --> S[Groq LLM]
-    S --> T[Answer with Source References]
-
-    F --> U[SQLAlchemy]
-    U --> V[Neon PostgreSQL]
-    V --> W[Users / Repositories / Conversations / Messages]
+    D --> Q[(Neon PostgreSQL)]
+    F --> Q
 ```
-#### RAG Pipeline
-1. Repository ingestion
-The application clones a supported public GitHub repository and extracts
-relevant source-code files, documentation, and available Git
-information.
-2. Chunking
-Code and documentation are processed according to their content: -
-Code: AST-aware parsing is used for supported languages to identify
-meaningful structures such as functions, methods, and classes. -
-Documentation: Markdown and text content are split into smaller
-chunks for retrieval. - Project overview: The root README.md
-receives particular importance for project-level questions.
-3. Embeddings
+
+### RAG Workflow
+
+1. The user connects a GitHub repository.
+2. The backend clones and processes the repository.
+3. Source code and documentation are divided into meaningful chunks.
+4. Sentence Transformers generates vector embeddings.
+5. FAISS stores the embeddings for similarity search.
+6. The user submits a question through the frontend.
+7. The retrieval service finds relevant repository content.
+8. Retrieved context is passed to the Groq LLM.
+9. The generated answer is returned to the frontend.
+10. Conversation history is stored in Neon PostgreSQL.
+
+### RAG Pipeline
+
+**1. Repository Ingestion**
+
+The application clones a supported public GitHub repository and extracts relevant source-code files and documentation.
+
+**2. Chunking**
+
+Code and documentation are processed according to their content:
+
+- **Code:** AST-aware parsing identifies meaningful structures such as functions, methods, and classes for supported languages.
+- **Documentation:** Markdown and text content are divided into smaller chunks.
+- **Project Overview:** The root README receives particular importance for project-level questions.
+
+**3. Embeddings**
+
 Text chunks are converted into vector embeddings using:
-sentence-transformers/all-MiniLM-L6-v2
-The embedding model runs locally and does not require a Hugging Face API
-token for ordinary local embedding generation.
-4. Retrieval
-The retrieval layer uses relevant strategies such as: - Project-overview
-retrieval - Keyword matching - Exact code-symbol and function matching -
-FAISS semantic similarity search - Duplicate reduction - Source
-prioritization
-5. Answer generation
-Retrieved chunks are assembled into context and passed to the Groq
-language model.
 
-###### Current model:
-openai/gpt-oss-20b
-The model is instructed to answer using the supplied repository context
-rather than inventing unsupported implementation details.
-Authentication and Conversation History
-The FastAPI backend handles authentication and application APIs.
-PostgreSQL stores persistent application data, including conversation
-history.
+`sentence-transformers/all-MiniLM-L6-v2`
 
-The database layer uses SQLAlchemy's asynchronous interface with
-asyncpg to communicate with the PostgreSQL database hosted on Neon.
+The embedding model runs locally.
 
-Conversation history is associated with the relevant authenticated user.
-Conversations can also be associated with repositories, allowing the
-interface to show which repository a previous chat belongs to.
-User
- |
- +---- Repository
- |
- +---- Conversation
-          |
-          +---- Message
-          |
-          +---- Message
-#### Technology Stack
-  Technology              Purpose
-  Python                  Backend language
-FastAPI                 Backend API framework
-HTML                    Frontend structure
-CSS                     Frontend styling
-JavaScript              Frontend interactions and API requests
-SQLAlchemy (Async)      Asynchronous database operations
-asyncpg                 PostgreSQL driver
-Neon PostgreSQL         Hosted relational database
-GitPython               GitHub repository cloning and Git operations
-Tree-sitter             AST-based code parsing
-LangChain               Document and vector-store integration
-Sentence Transformers   Local embedding generation
-Hugging Face            Embedding model ecosystem
-FAISS                   Vector similarity search
-Groq                    LLM inference
-python-dotenv           Local environment configuration
-Core AI components
-Embedding model
-sentence-transformers/all-MiniLM-L6-v2
-LLM
-openai/gpt-oss-20b
+**4. Retrieval**
 
-#### Project Structure
+The retrieval layer uses strategies such as:
+
+- Project-overview retrieval
+- Keyword matching
+- Code-symbol and function matching
+- FAISS semantic similarity search
+- Duplicate reduction
+- Source prioritization
+
+**5. Answer Generation**
+
+Retrieved chunks are assembled into context and passed to the Groq language model.
+
+**LLM:** `openai/gpt-oss-20b`
+
+The model generates answers using the supplied repository context.
+
+---
+
+## Authentication and Conversation History
+
+The FastAPI backend handles authentication and application APIs. PostgreSQL stores persistent application data, including conversation history.
+
+The database layer uses SQLAlchemy's asynchronous interface with `asyncpg` to communicate with the PostgreSQL database hosted on Neon.
+
+Conversation history is associated with the authenticated user. Conversations can also be associated with repositories, allowing users to identify which repository a previous chat belongs to.
+
+---
+
+## Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| Python | Backend programming language |
+| FastAPI | Backend API framework |
+| HTML | Frontend structure |
+| CSS | Frontend styling |
+| JavaScript | Frontend interactions and API requests |
+| SQLAlchemy (Async) | Asynchronous database operations |
+| asyncpg | PostgreSQL driver |
+| Neon PostgreSQL | Hosted relational database |
+| GitPython | GitHub repository cloning and Git operations |
+| Tree-sitter | AST-based code parsing |
+| LangChain | Document and vector-store integration |
+| Sentence Transformers | Local embedding generation |
+| FAISS | Vector similarity search |
+| Groq | LLM inference |
+| python-dotenv | Environment variable configuration |
+
+### Core AI Components
+
+| Component | Model |
+|---|---|
+| Embedding Model | `sentence-transformers/all-MiniLM-L6-v2` |
+| LLM | `openai/gpt-oss-20b` |
+
+---
+
+## Project Structure
+
+```text
 Codebase-QA-Assistant/
 │
 ├── backend/
@@ -210,123 +219,169 @@ Codebase-QA-Assistant/
 │       ├── dashboard.js
 │       └── chat.js
 │
-├── workspaces/              # Local repository workspaces (generated)
+├── workspaces/
 ├── requirements.txt
 ├── .gitignore
-├── .env                     # Local environment variables (not committed)
+├── .env
 └── README.md
+```
 
+Generated repository files and vector indexes are created locally as needed and excluded from Git.
 
-Generated repository files and vector indexes are created locally as
-needed and are excluded from Git.
-Local Setup
+---
 
-#### Prerequisites
+## Local Setup
+Follow these steps to run Codebase QA Assistant on your local machine
+### Prerequisites
+
+Before running the project, make sure you have:
+
 - Python installed
 - Git installed
 - A Groq API key
 - A PostgreSQL database (the project uses Neon)
 
+### 1. Clone the Repository
 
-1. Clone the repository
+```bash
 git clone https://github.com/prachishr/codebase-qa-assistant.git
 cd codebase-qa-assistant
-2. Create a virtual environment
-python -m venv .venv
-Windows PowerShell:
-.\.venv\Scripts\Activate.ps1
-3. Install dependencies
-pip install -r requirements.txt
-4. Configure environment variables
-Create a .env file in the project root and add the configuration
-required by backend/app/core/config.py.
+```
 
-Typical settings include:
-GROQ_API_KEY=your_groq_api_key
+### 2. Create a Virtual Environment
+
+```bash
+python -m venv .venv
+```
+
+### 3. Activate the Virtual Environment
+
+**Windows PowerShell:**
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+### 4. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Step 5: Configure Environment Variables
+
+Create a `.env` file in the root directory of the project.
+
+Add the following environment variables:
+
+```env
+APP_NAME="Codebase QA Assistant API"
+APP_ENV=development
+
 DATABASE_URL=your_neon_postgresql_connection_string
-SECRET_KEY=your_application_secret
-Use the exact variable names expected by your application configuration.
-Do not commit .env or share its values publicly.
-5. Start the FastAPI backend
-From the project root, run:
+GROQ_API_KEY=your_groq_api_key
+JWT_SECRET_KEY=your_secure_jwt_secret
+
+FRONTEND_URL=http://localhost:5173
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+```
+
+Replace the placeholder values with your actual credentials.
+
+| Variable | Description |
+|---|---|
+| `APP_NAME` | Application name |
+| `APP_ENV` | Application environment |
+| `DATABASE_URL` | Neon PostgreSQL connection string |
+| `GROQ_API_KEY` | API key used for Groq |
+| `JWT_SECRET_KEY` | Secret key used for JWT authentication |
+| `FRONTEND_URL` | Frontend application URL |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token expiration time in minutes |
+
+**Important:** Never commit your `.env` file to GitHub or expose your API keys, database credentials, or JWT secret.
+
+### 6. Run the FastAPI Backend
+
+From the project root, execute:
+
+```bash
 python -m uvicorn backend.app.main:app --reload
+```
+
 The backend will be available at:
-http://127.0.0.1:8000
-6. Open the API documentation
+
+`http://127.0.0.1:8000`
+
+### 7. Access API Documentation
+
 FastAPI provides interactive API documentation at:
-http://127.0.0.1:8000/docs
-The health endpoint can be checked at:
-http://127.0.0.1:8000/health
-7. Open the frontend
-Open frontend/index.html using a local static server, such as the VS
-Code Live Server extension. The frontend must be configured to send API
-requests to the running backend.
-Environment and Security
-- Keep API keys, database credentials, and application secrets in
-  environment variables.
-- Do not commit .env to Git.
-- Configure production environment variables through the hosting
-  provider's environment settings.
-- Use a strong, unique application secret in production.
-- Restrict cross-origin requests to the frontend origin in production.
-- Ensure conversation and repository operations enforce the
-  authenticated user's access permissions.
-Example Questions
+
+`http://127.0.0.1:8000/docs`
+
+Health endpoint:
+
+`http://127.0.0.1:8000/health`
+
+### 8. Open the Frontend
+
+Open `frontend/index.html` using a local static server, such as the VS Code Live Server extension.
+
+Make sure the frontend API configuration points to the running FastAPI backend.
+
+---
+
+## Example Questions
+
 After connecting a repository, users can ask:
+
 - What is this project about?
 - Explain the project architecture.
-- How does the loadRules function work?
+- How does the `loadRules` function work?
 - Which file handles authentication?
 - Where is the database connection created?
 - What are the main technologies used in this repository?
+- Explain the flow of data through this application.
 
+---
 
-##### Why These Technologies?
-  Technology / Approach               Reason
-  RAG                                 Grounds LLM responses in retrieved
-repository content
+## Why These Technologies?
 
-  FastAPI                             Provides a structured API backend
+| Technology | Reason |
+|---|---|
+| RAG | Grounds LLM responses in retrieved repository content |
+| FastAPI | Provides a structured backend API |
+| HTML, CSS, and JavaScript | Provides a separate frontend |
+| Tree-sitter | Helps identify meaningful code structures |
+| MiniLM Embeddings | Generates lightweight semantic representations |
+| FAISS | Enables local vector similarity search |
+| Groq | Provides LLM inference |
+| PostgreSQL | Stores persistent relational application data |
+| Neon | Hosts the PostgreSQL database |
 
-  HTML, CSS, and JavaScript           Provides a separate frontend
+### Why FAISS Instead of ChromaDB?
 
-  Tree-sitter / AST                   Helps preserve meaningful code
-structures during chunking
+ChromaDB was initially explored for vector storage, but the Windows environment encountered a `cygrpc` DLL loading issue related to an Application Control policy.
 
-  MiniLM embeddings                   Provides lightweight local semantic
-representations
+FAISS provided the required local vector similarity search without the problematic gRPC dependency, so the project moved to FAISS.
 
-  FAISS                               Enables local vector similarity
-search
+---
 
-  Groq                                Provides LLM inference
+## Current Limitations
 
-  PostgreSQL                          Stores persistent relational
-application data
-Neon                                Hosts the PostgreSQL database
-Why FAISS instead of ChromaDB?
-ChromaDB was initially explored for vector storage, but the Windows
-environment encountered a cygrpc DLL loading issue related to an
-Application Control policy.
-
-FAISS provided the required local vector similarity search without the
-problematic gRPC dependency, so the project moved to FAISS.
-Current Limitations
 - The application currently supports public GitHub repositories.
-- Repository cloning uses a shallow clone, so the full Git history is
-  not available.
+- Repository cloning uses a shallow clone, so the full Git history is not available.
 - Very large repositories may require additional processing time.
-- Repository workspaces and FAISS indexes are stored in the
-  application's local workspace.
-- Local or ephemeral deployment storage may require repository
-  re-ingestion and index regeneration after a restart or redeployment.
-- Private repository access is not currently provided through a GitHub
-  OAuth integration.
+- Repository workspaces and FAISS indexes are stored in the application's local workspace.
+- Local or ephemeral deployment storage may require repository re-ingestion and index regeneration after a restart or redeployment.
+- Private repository access is not currently provided through a GitHub OAuth integration.
 
-#### Future Improvements
+---
+
+## Future Improvements
+
 - GitHub OAuth and private repository support
 - Full Git history analysis
-- More programming-language support
+- Support for additional programming languages
 - Improved retrieval and reranking
 - Repository dependency visualization
 - Streaming LLM responses
@@ -335,17 +390,20 @@ Current Limitations
 - Improved code and source highlighting
 - Repository-aware code generation
 
-#### Project Highlights
-Generative AI · Large Language Models · Retrieval-Augmented Generation
-· Semantic Search · Vector Embeddings · FAISS · AST Parsing · Code
-Intelligence · GitHub Integration · FastAPI · JavaScript · PostgreSQL ·
-Authentication
-Author
-Prachi Sharma
+---
+
+## Project Highlights
+
+Generative AI · Large Language Models · Retrieval-Augmented Generation · Semantic Search · Vector Embeddings · FAISS · AST Parsing · Code Intelligence · GitHub Integration · FastAPI · JavaScript · PostgreSQL · Authentication
+
+---
+
+## Author
+
+**Prachi Sharma**
 
 GitHub: [prachishr](https://github.com/prachishr)
 
-Project repository: [codebase-qa-assistant](https://github.com/prachishr/codebase-qa-assistant)
+Project Repository: [codebase-qa-assistant](https://github.com/prachishr/codebase-qa-assistant)
 
-If you find this project useful, consider giving the repository a ⭐ on
-GitHub.
+If you find this project useful, consider giving the repository a ⭐ on GitHub.

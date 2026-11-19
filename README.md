@@ -25,6 +25,18 @@ The application also provides user authentication and PostgreSQL-backed conversa
 
 ---
 
+<p align="center">
+  <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/FAISS-Vector_Search-005571?style=for-the-badge" alt="FAISS">
+  <img src="https://img.shields.io/badge/Groq-API-F55036?style=for-the-badge" alt="Groq">
+  <img src="https://img.shields.io/badge/Neon-PostgreSQL-00E599?style=for-the-badge&logo=neon&logoColor=black" alt="Neon">
+  <img src="https://img.shields.io/badge/Render-Deployment-46E3B7?style=for-the-badge&logo=render&logoColor=black" alt="Render">
+</p>
+
+
+
 ## Features
 
 - **User Authentication:** Sign-up and login through the FastAPI backend.

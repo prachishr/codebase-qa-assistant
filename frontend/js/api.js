@@ -3,8 +3,8 @@
    API CONFIGURATION
 ========================================= */
 
-// FastAPI development server
-const API_BASE_URL = "http://127.0.0.1:8000/api/v1";
+// FastAPI production server
+const API_BASE_URL = "https://codebase-qa-assistant-r80e.onrender.com/api/v1";
 
 
 /* =========================================

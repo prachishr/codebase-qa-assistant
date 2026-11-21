@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
 pydantic-settings
+email-validator
 python-dotenv
 
 sqlalchemy[asyncio]
@@ -25,3 +26,4 @@ python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
 httpx
+

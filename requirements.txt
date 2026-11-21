@@ -20,9 +20,8 @@ groq
 langchain
 langchain-community
 langchain-core
-langchain-huggingface
 langchain-text-splitters
-sentence-transformers
+langchain-google-genai==4.5.2
 
 # Vector Search
 faiss-cpu

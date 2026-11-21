@@ -2,14 +2,28 @@
 """Repository retrieval using FAISS, semantic search, and keyword ranking."""
 
 import re
+import os
+from functools import lru_cache
 
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
 
 
 FAISS_PATH = "faiss_index"
 
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+
+# --------------------------------------------------
+# Load and reuse embedding model
+# --------------------------------------------------
+
+@lru_cache(maxsize=1)
+def get_embeddings():
+    """Load and reuse Gemini embeddings."""
+
+    return GoogleGenerativeAIEmbeddings(
+        model="models/gemini-embedding-001",
+        google_api_key=os.environ["GEMINI_API_KEY"]
+    )
 
 
 # --------------------------------------------------
@@ -18,9 +32,7 @@ EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 def load_vector_store(index_path=FAISS_PATH):
 
-    embeddings = HuggingFaceEmbeddings(
-        model_name=EMBEDDING_MODEL
-    )
+    embeddings = get_embeddings()
 
     vector_store = FAISS.load_local(
         index_path,
@@ -66,6 +78,7 @@ def get_project_overview(vector_store, k=5):
 
     return overview_documents
 
+
 # --------------------------------------------------
 # Query intent and topic mapping
 # --------------------------------------------------
@@ -74,87 +87,48 @@ TOPIC_MAP = {
 
     "ingestion": {
         "triggers": [
-            "ingestion",
-            "ingest",
-            "document ingestion",
-            "data ingestion",
-            "extract",
-            "load repository",
-            "repository loading",
-            "read repository",
-            "git history",
-            "load documents",
-            "extract documents",
-            "repository files",
-            "sensitive files",
-            "sensitive file",
-            "large files",
-            "large file",
-            "file size",
-            "size limit",
-            "ignored files",
-            "ignored directories",
-            "excluded files",
-            "file filtering",
-            "file protection",
-            "secret files",
-            "credentials",
-            "private keys"
+            "ingestion", "ingest", "document ingestion",
+            "data ingestion", "extract", "load repository",
+            "repository loading", "read repository",
+            "git history", "load documents", "extract documents",
+            "repository files", "sensitive files", "sensitive file",
+            "large files", "large file", "file size", "size limit",
+            "ignored files", "ignored directories", "excluded files",
+            "file filtering", "file protection", "secret files",
+            "credentials", "private keys"
         ],
         "files": ["ingestion.py"],
         "keywords": [
-            "extract_code",
-            "extract_documentation",
-            "extract_git_history",
-            "load_repository",
-            "repo_path",
-            "iter_commits",
-            "CODE_EXTENSIONS",
-            "IGNORED_DIRS",
-            "MAX_FILE_SIZE",
-            "SENSITIVE_FILE_NAMES",
-            "SENSITIVE_EXTENSIONS",
-            "is_sensitive_file",
-            "getsize",
-            "os.walk"
+            "load_repository", "extract_code",
+            "extract_documentation", "extract_git_history",
+            "MAX_FILE_SIZE", "os.walk", "sensitive_files"
         ]
     },
 
     "chunking": {
         "triggers": [
-            "chunk",
-            "chunks",
-            "chunking",
-            "split documents",
-            "text splitter",
-            "ast"
+            "chunk", "chunks", "chunking",
+            "split documents", "text splitter", "ast"
         ],
         "files": ["chunking.py"],
         "keywords": [
-            "create_chunks",
-            "get_code_chunks",
-            "chunk_size",
-            "chunk_overlap",
-            "RecursiveCharacterTextSplitter",
-            "tree-sitter"
+            "create_chunks", "get_code_chunks",
+            "chunk_size", "chunk_overlap",
+            "RecursiveCharacterTextSplitter", "tree-sitter"
         ]
     },
 
     "embeddings": {
         "triggers": [
-            "embedding",
-            "embeddings",
-            "embed",
-            "vector",
-            "vector database",
-            "vector store",
-            "faiss",
+            "embedding", "embeddings", "embed", "vector",
+            "vector database", "vector store", "faiss",
             "similarity search"
         ],
         "files": ["vector_store.py", "retrieval.py"],
         "keywords": [
-            "HuggingFaceEmbeddings",
-            "sentence-transformers",
+            "GoogleGenerativeAIEmbeddings",
+            "gemini-embedding-001",
+            "GEMINI_API_KEY",
             "FAISS",
             "from_documents",
             "save_local",
@@ -164,89 +138,54 @@ TOPIC_MAP = {
 
     "retrieval": {
         "triggers": [
-            "retrieval",
-            "retrieve",
-            "search",
-            "similarity",
-            "relevant documents",
-            "relevant chunks",
-            "keyword search"
+            "retrieval", "retrieve", "search", "similarity",
+            "relevant documents", "relevant chunks", "keyword search"
         ],
         "files": ["retrieval.py"],
         "keywords": [
-            "search_repository",
-            "keyword_search",
-            "similarity_search",
-            "get_project_overview"
+            "search_repository", "keyword_search",
+            "similarity_search", "get_project_overview"
         ]
     },
 
     "rag": {
         "triggers": [
-            "rag",
-            "generation",
-            "generate answer",
-            "llm",
-            "groq",
-            "language model"
+            "rag", "generation", "generate answer", "llm",
+            "groq", "language model"
         ],
         "files": ["rag.py"],
         "keywords": [
-            "generate_answer",
-            "Groq",
-            "chat.completions.create",
-            "MODEL_NAME",
-            "system_prompt"
+            "generate_answer", "Groq",
+            "chat.completions.create", "MODEL_NAME", "system_prompt"
         ]
     },
 
     "authentication": {
         "triggers": [
-            "authentication",
-            "auth",
-            "login",
-            "signup",
-            "sign up",
-            "password",
-            "jwt",
-            "token"
+            "authentication", "auth", "login", "signup",
+            "sign up", "password", "jwt", "token"
         ],
         "files": [
-            "security.py",
-            "auth.py",
-            "dependencies.py"
+            "security.py", "auth.py", "dependencies.py"
         ],
         "keywords": [
-            "hash_password",
-            "verify_password",
-            "create_access_token",
-            "jwt.encode",
-            "jwt.decode"
+            "hash_password", "verify_password",
+            "create_access_token", "jwt.encode", "jwt.decode"
         ]
     },
 
     "database": {
         "triggers": [
-            "database",
-            "postgresql",
-            "postgres",
-            "sqlalchemy",
-            "database connection",
-            "database tables"
+            "database", "postgresql", "postgres", "sqlalchemy",
+            "database connection", "database tables"
         ],
         "files": [
-            "database.py",
-            "user.py",
-            "repository.py",
-            "conversation.py",
-            "message.py"
+            "database.py", "user.py", "repository.py",
+            "conversation.py", "message.py"
         ],
         "keywords": [
-            "create_async_engine",
-            "AsyncSession",
-            "DeclarativeBase",
-            "ForeignKey",
-            "mapped_column"
+            "create_async_engine", "AsyncSession",
+            "DeclarativeBase", "ForeignKey", "mapped_column"
         ]
     }
 }
@@ -259,7 +198,6 @@ TOPIC_MAP = {
 def detect_topics(question):
 
     question_lower = question.lower()
-
     detected_topics = []
 
     for topic, details in TOPIC_MAP.items():
@@ -281,12 +219,10 @@ def extract_explicit_symbols(question):
 
     symbols = set()
 
-    # Names written in backticks
     symbols.update(
         re.findall(r"`([A-Za-z_][A-Za-z0-9_]*)`", question)
     )
 
-    # Explicit function, method or class references
     patterns = [
         r"\bfunction\s+([A-Za-z_][A-Za-z0-9_]*)",
         r"\bmethod\s+([A-Za-z_][A-Za-z0-9_]*)",
@@ -295,7 +231,11 @@ def extract_explicit_symbols(question):
 
     for pattern in patterns:
 
-        matches = re.findall(pattern, question, re.IGNORECASE)
+        matches = re.findall(
+            pattern,
+            question,
+            re.IGNORECASE
+        )
 
         symbols.update(matches)
 
@@ -346,14 +286,17 @@ def keyword_search(
     k=5,
     topics=None
 ):
-    """Find chunks using exact question terms and topic-specific code identifiers."""
+    """Find chunks using exact question terms and topic-specific identifiers."""
 
     question_lower = question.lower()
     topics = topics or []
     matching_documents = []
 
     question_words = set(
-        re.findall(r"[a-zA-Z_][a-zA-Z0-9_]*", question_lower)
+        re.findall(
+            r"[a-zA-Z_][a-zA-Z0-9_]*",
+            question_lower
+        )
     )
 
     ignored_words = {
@@ -372,6 +315,7 @@ def keyword_search(
     }
 
     for doc_id in vector_store.index_to_docstore_id.values():
+
         document = vector_store.docstore.search(doc_id)
 
         if document is None:
@@ -381,33 +325,44 @@ def keyword_search(
         content = document.page_content.lower()
         score = 0
 
-        # Exact word matches from the user's question.
         for word in searchable_words:
+
             if word in file_name:
                 score += 5
 
-            if re.search(r"\b" + re.escape(word) + r"\b", content):
+            if re.search(
+                r"\b" + re.escape(word) + r"\b",
+                content
+            ):
                 score += 3
 
-        # Boost chunks that belong to a detected topic and contain
-        # implementation identifiers associated with that topic.
         for topic in topics:
+
             topic_details = TOPIC_MAP[topic]
 
-            if any(name.lower() in file_name for name in topic_details["files"]):
+            if any(
+                name.lower() in file_name
+                for name in topic_details["files"]
+            ):
                 score += 15
 
             for keyword in topic_details["keywords"]:
+
                 if keyword.lower() in content:
                     score += 8
 
         if score > 0:
             matching_documents.append((score, document))
 
-    matching_documents.sort(key=lambda item: item[0], reverse=True)
+    matching_documents.sort(
+        key=lambda item: item[0],
+        reverse=True
+    )
 
-    # Return a wider candidate pool; final selection happens in search_repository.
-    return [document for score, document in matching_documents[:k * 5]]
+    return [
+        document
+        for score, document in matching_documents[:k * 5]
+    ]
 
 
 # --------------------------------------------------
@@ -417,20 +372,10 @@ def keyword_search(
 def is_technical_question(question):
 
     technical_keywords = [
-        "how",
-        "implemented",
-        "implementation",
-        "function",
-        "class",
-        "code",
-        "workflow",
-        "process",
-        "architecture",
-        "logic",
-        "work",
-        "stored",
-        "created",
-        "generated"
+        "how", "implemented", "implementation",
+        "function", "class", "code", "workflow",
+        "process", "architecture", "logic", "work",
+        "stored", "created", "generated"
     ]
 
     question_lower = question.lower()
@@ -455,29 +400,27 @@ def search_repository(
 
     question_lower = question.lower()
 
-    # --------------------------------------------------
     # 1. Project overview questions
-    # --------------------------------------------------
 
     overview_keywords = [
-    "what is this project",
-    "what does this project",
-    "what is the project",
-    "project about",
-    "about this project",
-    "purpose of this project",
-    "what does this repository",
-    "what is this repository",
-    "overall repository structure",
-    "repository structure",
-    "project structure",
-    "overall project structure",
-    "main components",
-    "project architecture",
-    "repository architecture",
-    "overall architecture",
-    "repository layout",
-    "project layout"
+        "what is this project",
+        "what does this project",
+        "what is the project",
+        "project about",
+        "about this project",
+        "purpose of this project",
+        "what does this repository",
+        "what is this repository",
+        "overall repository structure",
+        "repository structure",
+        "project structure",
+        "overall project structure",
+        "main components",
+        "project architecture",
+        "repository architecture",
+        "overall architecture",
+        "repository layout",
+        "project layout"
     ]
 
     is_overview_question = any(
@@ -492,9 +435,7 @@ def search_repository(
         if overview:
             return overview
 
-    # --------------------------------------------------
     # 2. Explicit function / class search
-    # --------------------------------------------------
 
     symbols = extract_explicit_symbols(question)
 
@@ -509,15 +450,11 @@ def search_repository(
         if symbol_results:
             return symbol_results
 
-    # --------------------------------------------------
     # 3. Detect relevant topics
-    # --------------------------------------------------
 
     topics = detect_topics(question)
 
-    # --------------------------------------------------
     # 4. Keyword retrieval
-    # --------------------------------------------------
 
     keyword_results = keyword_search(
         vector_store,
@@ -526,18 +463,14 @@ def search_repository(
         topics=topics
     )
 
-    # --------------------------------------------------
     # 5. Semantic retrieval
-    # --------------------------------------------------
 
     semantic_results = vector_store.similarity_search(
         question,
         k=k * 3
     )
 
-    # --------------------------------------------------
     # 6. Combine and rank documents
-    # --------------------------------------------------
 
     document_scores = {}
 
@@ -573,16 +506,15 @@ def search_repository(
                 "score": semantic_score
             }
 
-    # --------------------------------------------------
     # 7. Apply topic-based relevance boosts
-    # --------------------------------------------------
 
     for item in document_scores.values():
 
         document = item["document"]
 
         file_name = document.metadata.get(
-            "file", ""
+            "file",
+            ""
         ).lower()
 
         content = document.page_content.lower()
@@ -602,9 +534,7 @@ def search_repository(
                 if keyword.lower() in content:
                     item["score"] += 3
 
-    # --------------------------------------------------
     # 8. Sort by relevance
-    # --------------------------------------------------
 
     ranked_documents = sorted(
         document_scores.values(),
@@ -612,27 +542,32 @@ def search_repository(
         reverse=True
     )
 
-    # --------------------------------------------------
-    # 9. Select relevant documents without over-diversifying
-    # --------------------------------------------------
+    # 9. Select relevant documents
 
     selected_documents = []
     file_counts = {}
 
-    # For a focused question about one topic (for example, ingestion),
-    # allow more chunks from that topic's source file. Broad questions
-    # still retain file diversity.
-    max_chunks_per_file = k if len(topics) == 1 else 2
+    max_chunks_per_file = (
+        k if len(topics) == 1 else 2
+    )
 
     for item in ranked_documents:
+
         document = item["document"]
-        file_name = document.metadata.get("file", "Unknown")
+
+        file_name = document.metadata.get(
+            "file",
+            "Unknown"
+        )
 
         if file_counts.get(file_name, 0) >= max_chunks_per_file:
             continue
 
         selected_documents.append(document)
-        file_counts[file_name] = file_counts.get(file_name, 0) + 1
+
+        file_counts[file_name] = (
+            file_counts.get(file_name, 0) + 1
+        )
 
         if len(selected_documents) >= k:
             break
@@ -658,7 +593,6 @@ if __name__ == "__main__":
     for i, result in enumerate(results, start=1):
 
         print(f"\nResult {i}")
-
         print("File:", result.metadata.get("file"))
         print("Type:", result.metadata.get("type"))
         print("Section:", result.metadata.get("section"))

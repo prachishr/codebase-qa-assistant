@@ -1,29 +1,35 @@
+
+# Backend
 fastapi
 uvicorn[standard]
 pydantic-settings
 email-validator
 python-dotenv
 
+# Database
 sqlalchemy[asyncio]
 asyncpg
 alembic
 
-groq
-gitpython
+# Authentication and Security
+PyJWT
+pwdlib[argon2]
 
+# AI and LLM
+groq
 langchain
 langchain-community
+langchain-core
 langchain-huggingface
 langchain-text-splitters
-
-faiss-cpu
 sentence-transformers
 
+# Vector Search
+faiss-cpu
+
+# GitHub Integration
+gitpython
+
+# Code Parsing
 tree-sitter
 tree-sitter-language-pack
-
-python-jose[cryptography]
-passlib[bcrypt]
-python-multipart
-httpx
-

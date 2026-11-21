@@ -1,6 +1,14 @@
-streamlit
-gitpython
+fastapi
+uvicorn[standard]
+pydantic-settings
 python-dotenv
+
+sqlalchemy
+asyncpg
+alembic
+
+groq
+gitpython
 
 langchain
 langchain-community
@@ -11,9 +19,9 @@ faiss-cpu
 sentence-transformers
 
 tree-sitter
-groq
 tree-sitter-language-pack
 
-psycopg2-binary
-
-supabase
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+httpx

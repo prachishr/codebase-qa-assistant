@@ -1,9 +1,9 @@
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-    /* =====================================
-       1. ELEMENT REFERENCES
-    ===================================== */
+    // =====================================
+    // 1. ELEMENT REFERENCES
+    // =====================================
 
     const sidebar = document.getElementById("sidebar");
     const menuBtn = document.getElementById("menuBtn");
@@ -30,9 +30,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     let retryOperation = null;
 
 
-    /* =====================================
-       2. AUTHENTICATION CHECK
-    ===================================== */
+    // =====================================
+    // 2. AUTHENTICATION CHECK
+    // =====================================
 
     const token = localStorage.getItem("access_token");
 
@@ -62,11 +62,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (error) {
 
         if (error.status === 401 || error.status === 403) {
-
             localStorage.removeItem("access_token");
             window.location.href = "login.html";
             return;
-
         }
 
         console.error("Unable to verify user:", error);
@@ -76,13 +74,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         );
 
         return;
-
     }
 
 
-    /* =====================================
-       3. SIDEBAR CONTROLS
-    ===================================== */
+    // =====================================
+    // 3. SIDEBAR CONTROLS
+    // =====================================
 
     menuBtn.addEventListener("click", () => {
         sidebar.classList.add("open");
@@ -93,9 +90,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
 
-    /* =====================================
-       4. REPOSITORY MODAL CONTROLS
-    ===================================== */
+    // =====================================
+    // 4. REPOSITORY MODAL CONTROLS
+    // =====================================
 
     function openRepositoryModal() {
 
@@ -112,7 +109,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         submitButton.disabled = false;
         submitButton.textContent = "Connect & Index Repository";
-
     }
 
     function closeModal() {
@@ -123,7 +119,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         repositoryProgress.textContent = "";
         retryOperation = null;
-
     }
 
     addRepositoryBtn.addEventListener("click", openRepositoryModal);
@@ -137,19 +132,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (event.target === repositoryModal) {
             closeModal();
         }
-
     });
 
 
-    /* =====================================
-       5. PROGRESS AND PROCESSING HELPERS
-    ===================================== */
+    // =====================================
+    // 5. PROGRESS AND PROCESSING HELPERS
+    // =====================================
 
     function showProgress(message, color = "#93c5fd") {
 
         repositoryProgress.style.color = color;
         repositoryProgress.textContent = message;
-
     }
 
     function setProcessing(processing) {
@@ -158,19 +151,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         submitButton.disabled = processing;
         githubUrlInput.disabled = processing;
-
         closeRepositoryModal.disabled = processing;
 
         if (processing) {
             submitButton.textContent = "Please wait...";
         }
-
     }
 
 
-    /* =====================================
-       6. EXTRACT REPOSITORY NAME
-    ===================================== */
+    // =====================================
+    // 6. EXTRACT REPOSITORY NAME
+    // =====================================
 
     function getRepositoryDetails(githubUrl) {
 
@@ -191,13 +182,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             );
         }
 
-        const parts = url.pathname
-            .split("/")
-            .filter(Boolean);
+        const parts = url.pathname.split("/").filter(Boolean);
 
         if (parts.length !== 2) {
             throw new Error(
-                "Please enter a repository URL in this format: https://github.com/username/repository"
+                "Please enter a repository URL in owner/repository format."
             );
         }
 
@@ -212,13 +201,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             name: repositoryName,
             github_url: `https://github.com/${username}/${repositoryName}`
         };
-
     }
 
 
-    /* =====================================
-       7. REPOSITORY CARD TEMPLATE
-    ===================================== */
+    // =====================================
+    // 7. REPOSITORY CARD TEMPLATE
+    // =====================================
 
     function createRepositoryCard(repository) {
 
@@ -241,10 +229,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         const actions = document.createElement("div");
         actions.className = "repository-actions";
 
+
         // Open Chat button
         const askButton = document.createElement("button");
         askButton.className = "btn btn-primary";
         askButton.textContent = "Open Chat";
+        askButton.type = "button";
+
+
+        // Re-index button
+        const reindexButton = document.createElement("button");
+        reindexButton.className = "btn btn-outline";
+        reindexButton.textContent = "Re-index";
+        reindexButton.type = "button";
+
 
         // Delete Repository button
         const deleteButton = document.createElement("button");
@@ -252,12 +250,22 @@ document.addEventListener("DOMContentLoaded", async () => {
         deleteButton.textContent = "Delete";
         deleteButton.type = "button";
 
+
         heading.append(icon, title);
-        actions.append(askButton, deleteButton);
+
+        actions.append(
+            askButton,
+            reindexButton,
+            deleteButton
+        );
 
         card.append(heading, description, actions);
 
-        // Open repository chat
+
+        // ---------------------------------
+        // OPEN CHAT
+        // ---------------------------------
+
         askButton.addEventListener("click", () => {
 
             window.location.href =
@@ -265,11 +273,65 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         });
 
-        // Delete repository
+
+        // ---------------------------------
+        // RE-INDEX REPOSITORY
+        // ---------------------------------
+
+        reindexButton.addEventListener("click", async () => {
+
+            const confirmed = window.confirm(
+                `Re-index "${repository.name}"?\n\n` +
+                "This will clone the latest GitHub version and recreate its FAISS index. " +
+                "Existing conversations and messages will be preserved."
+            );
+
+            if (!confirmed) return;
+
+            try {
+
+                reindexButton.disabled = true;
+                askButton.disabled = true;
+                deleteButton.disabled = true;
+
+                reindexButton.textContent = "Re-indexing...";
+
+                const result = await RepositoryAPI.reindex(repository.id);
+
+                alert(
+                    `Repository re-indexed successfully!\n\n` +
+                    `Documents: ${result.documents_processed ?? "N/A"}\n` +
+                    `Chunks: ${result.chunks_created ?? "N/A"}`
+                );
+
+                await loadRepositories();
+
+            } catch (error) {
+
+                console.error("Repository re-indexing failed:", error);
+
+                alert(
+                    `Unable to re-index repository: ${error.message}`
+                );
+
+                reindexButton.disabled = false;
+                askButton.disabled = false;
+                deleteButton.disabled = false;
+
+                reindexButton.textContent = "Re-index";
+            }
+        });
+
+
+        // ---------------------------------
+        // DELETE REPOSITORY
+        // ---------------------------------
+
         deleteButton.addEventListener("click", async () => {
 
             const confirmed = window.confirm(
-                `Are you sure you want to delete "${repository.name}"?\n\nThis will permanently delete the repository, its conversations, messages and indexed files.`
+                `Are you sure you want to delete "${repository.name}"?\n\n` +
+                "This will permanently delete the repository, its conversations, messages and indexed files."
             );
 
             if (!confirmed) return;
@@ -278,11 +340,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 deleteButton.disabled = true;
                 askButton.disabled = true;
+                reindexButton.disabled = true;
+
                 deleteButton.textContent = "Deleting...";
 
                 await RepositoryAPI.delete(repository.id);
 
-                // Refresh repository cards and count
                 await loadRepositories();
 
             } catch (error) {
@@ -295,20 +358,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 deleteButton.disabled = false;
                 askButton.disabled = false;
+                reindexButton.disabled = false;
+
                 deleteButton.textContent = "Delete";
-
             }
-
         });
 
         return card;
-
     }
 
 
-    /* =====================================
-       8. LOAD REPOSITORIES
-    ===================================== */
+    // =====================================
+    // 8. LOAD REPOSITORIES
+    // =====================================
 
     async function loadRepositories() {
 
@@ -347,7 +409,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                     .addEventListener("click", openRepositoryModal);
 
                 return;
-
             }
 
             repositories.forEach((repository) => {
@@ -375,15 +436,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             document.getElementById("retryRepositoriesBtn")
                 .addEventListener("click", loadRepositories);
-
         }
-
     }
 
 
-    /* =====================================
-       9. AUTOMATIC CLONE AND INDEX PIPELINE
-    ===================================== */
+    // =====================================
+    // 9. AUTOMATIC CLONE AND INDEX PIPELINE
+    // =====================================
 
     async function cloneAndIndex(repositoryId) {
 
@@ -457,25 +516,19 @@ document.addEventListener("DOMContentLoaded", async () => {
             submitButton.disabled = false;
 
             if (retryOperation) {
-
                 submitButton.textContent = "Retry Indexing";
-
             } else {
-
                 submitButton.textContent = "Retry Cloning";
-
             }
 
             await loadRepositories();
-
         }
-
     }
 
 
-    /* =====================================
-       10. RETRY INDEXING
-    ===================================== */
+    // =====================================
+    // 10. RETRY INDEXING
+    // =====================================
 
     async function retryIndexing(repositoryId) {
 
@@ -483,9 +536,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             setProcessing(true);
 
-            showProgress(
-                "Retrying repository indexing..."
-            );
+            showProgress("Retrying repository indexing...");
 
             submitButton.textContent = "Indexing Repository...";
 
@@ -505,7 +556,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             setTimeout(() => {
 
                 repositoryModal.classList.remove("active");
+
                 repositoryForm.reset();
+
                 repositoryProgress.textContent = "";
 
                 submitButton.disabled = false;
@@ -527,15 +580,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             isProcessing = false;
             githubUrlInput.disabled = false;
-
         }
-
     }
 
 
-    /* =====================================
-       11. ADD REPOSITORY
-    ===================================== */
+    // =====================================
+    // 11. ADD REPOSITORY
+    // =====================================
 
     repositoryForm.addEventListener("submit", async (event) => {
 
@@ -559,11 +610,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 isProcessing = false;
                 githubUrlInput.disabled = false;
-
             }
 
             return;
-
         }
 
         const githubUrl = githubUrlInput.value.trim();
@@ -611,29 +660,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             isProcessing = false;
             githubUrlInput.disabled = false;
-
         }
-
     });
 
 
-    /* =====================================
-       12. REFRESH REPOSITORIES
-    ===================================== */
+    // =====================================
+    // 12. REFRESH REPOSITORIES
+    // =====================================
 
     refreshRepositoriesBtn.addEventListener("click", loadRepositories);
 
 
-    /* =====================================
-       13. LOGOUT
-    ===================================== */
+    // =====================================
+    // 13. LOGOUT
+    // =====================================
 
     logoutBtn.addEventListener("click", () => {
 
         localStorage.removeItem("access_token");
 
         window.location.href = "login.html";
-
     });
 
 

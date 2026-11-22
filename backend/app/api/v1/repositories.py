@@ -15,7 +15,7 @@ from backend.app.models.user import User
 from backend.app.models.repository import Repository
 from backend.app.models.conversation import Conversation
 from backend.app.models.message import Message
-
+import uuid
 from backend.app.schemas.repository import (
     RepositoryCreate,
     RepositoryResponse,
@@ -348,6 +348,163 @@ async def index_github_repository(
             detail="Repository indexing failed. Check the backend terminal."
         )
 
+
+
+
+# =========================================
+# RE-INDEX EXISTING GITHUB REPOSITORY
+# =========================================
+
+@router.post("/{repository_id}/reindex")
+async def reindex_github_repository(
+    repository_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # 1. Verify repository ownership
+    result = await db.execute(
+        select(Repository).where(
+            Repository.id == repository_id,
+            Repository.user_id == current_user.id
+        )
+    )
+
+    repository = result.scalar_one_or_none()
+
+    if repository is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Repository not found."
+        )
+
+    # 2. Locate repository workspace
+    base_path = WORKSPACE_DIR.resolve()
+
+    workspace_path = (
+        base_path
+        / f"user_{current_user.id}"
+        / f"repository_{repository_id}"
+    ).resolve()
+
+    # Create a unique backup path
+    backup_path = workspace_path.with_name(
+        f"{workspace_path.name}_backup_{uuid.uuid4().hex}"
+    )
+
+    backup_created = False
+
+    try:
+        # 3. Ensure workspace is inside the allowed directory
+        workspace_path.relative_to(base_path)
+        backup_path.relative_to(base_path)
+
+        # 4. Preserve existing workspace
+        if workspace_path.exists():
+
+            await run_in_threadpool(
+                workspace_path.rename,
+                backup_path
+            )
+
+            backup_created = True
+
+        # 5. Clone latest GitHub repository
+        await run_in_threadpool(
+            clone_repository,
+            repository.github_url,
+            current_user.id,
+            repository.id
+        )
+
+        # 6. Generate fresh FAISS index
+        indexing_result = await run_in_threadpool(
+            index_repository,
+            current_user.id,
+            repository.id
+        )
+
+        # 7. Remove backup only after successful indexing
+        if backup_created:
+
+            try:
+                await run_in_threadpool(
+                    shutil.rmtree,
+                    backup_path
+                )
+
+                backup_created = False
+
+            except OSError:
+                print(
+                    "Warning: New index created successfully, "
+                    "but old workspace backup could not be removed:",
+                    backup_path
+                )
+
+        return {
+            "message": "Repository re-indexed successfully.",
+            "repository_id": repository.id,
+            "repository_name": repository.name,
+            **indexing_result
+        }
+
+    except Exception as exc:
+
+        print("\n========== RE-INDEXING ERROR ==========")
+        traceback.print_exc()
+        print("========================================\n")
+
+        # 8. Remove the failed new workspace
+        try:
+            if workspace_path.exists():
+                await run_in_threadpool(
+                    shutil.rmtree,
+                    workspace_path
+                )
+
+        except OSError:
+            print("Warning: Failed workspace cleanup failed.")
+
+        # 9. Restore the previous workspace
+        if backup_created and backup_path.exists():
+
+            try:
+                await run_in_threadpool(
+                    backup_path.rename,
+                    workspace_path
+                )
+
+                print("Previous repository workspace restored.")
+
+            except OSError:
+                print(
+                    "CRITICAL: Could not restore previous workspace:",
+                    backup_path
+                )
+
+        # 10. Return appropriate error
+        if isinstance(exc, ValueError):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(exc)
+            )
+
+        if isinstance(exc, FileNotFoundError):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(exc)
+            )
+
+        if isinstance(exc, RuntimeError):
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=str(exc)
+            )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Repository re-indexing failed. Check the backend logs."
+        )
 
 # =========================================
 # ASK QUESTIONS ABOUT REPOSITORY

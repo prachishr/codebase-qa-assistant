@@ -1,35 +1,30 @@
 
-/* =========================================
-   API CONFIGURATION
-========================================= */
+// =========================================
+// API BASE URL
+// =========================================
 
-// FastAPI production server
+// Production FastAPI server
 const API_BASE_URL = "https://codebase-qa-assistant-r80e.onrender.com/api/v1";
-
 
 // Local FastAPI server
 // const API_BASE_URL = "http://127.0.0.1:8000/api/v1";
 
-/* =========================================
-   API REQUEST HANDLER
-========================================= */
+
+// =========================================
+// COMMON API REQUEST HANDLER
+// =========================================
 
 async function apiRequest(endpoint, options = {}) {
 
     const token = localStorage.getItem("access_token");
 
     const headers = {
+        "Content-Type": "application/json",
         ...options.headers
     };
 
-    // Add JSON content type when sending a request body
-    if (options.body && !(options.body instanceof FormData)) {
-        headers["Content-Type"] = "application/json";
-    }
-
-    // Attach authentication token when available
     if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
+        headers.Authorization = `Bearer ${token}`;
     }
 
     try {
@@ -42,14 +37,14 @@ async function apiRequest(endpoint, options = {}) {
             }
         );
 
-        // Handle responses without a body
-        if (response.status === 204) {
-            return null;
+        const contentType = response.headers.get("content-type");
+
+        let data = {};
+
+        if (contentType && contentType.includes("application/json")) {
+            data = await response.json();
         }
 
-        const data = await response.json().catch(() => null);
-
-        // Handle unsuccessful responses
         if (!response.ok) {
 
             const errorMessage =
@@ -65,28 +60,26 @@ async function apiRequest(endpoint, options = {}) {
 
     } catch (error) {
 
-        // Handle network and connection errors
         if (error instanceof TypeError) {
             throw new Error(
-                "Unable to connect to the server. Please check whether the backend is running."
+                "Unable to connect to the server. Please check your internet connection."
             );
         }
 
-        // Pass API errors to the calling function
         throw error;
     }
 }
 
 
-/* =========================================
-   AUTHENTICATION APIs
-========================================= */
+// =========================================
+// AUTHENTICATION API
+// =========================================
 
 const AuthAPI = {
 
-    signup: async (userData) => {
+    register: async (userData) => {
 
-        return await apiRequest("/auth/signup", {
+        return await apiRequest("/auth/register", {
             method: "POST",
             body: JSON.stringify(userData)
         });
@@ -113,28 +106,13 @@ const AuthAPI = {
 };
 
 
-/* =========================================
-   REPOSITORY APIs
-========================================= */
+// =========================================
+// REPOSITORY API
+// =========================================
 
 const RepositoryAPI = {
 
-    getAll: async () => {
-
-        return await apiRequest("/repositories/", {
-            method: "GET"
-        });
-
-    },
-
-    getById: async (repositoryId) => {
-
-        return await apiRequest(`/repositories/${repositoryId}`, {
-            method: "GET"
-        });
-
-    },
-
+    // Add new repository
     create: async (repositoryData) => {
 
         return await apiRequest("/repositories/", {
@@ -144,14 +122,25 @@ const RepositoryAPI = {
 
     },
 
-    delete: async (repositoryId) => {
+    // Get all repositories
+    getAll: async () => {
 
-        return await apiRequest(`/repositories/${repositoryId}`, {
-            method: "DELETE"
+        return await apiRequest("/repositories/", {
+            method: "GET"
         });
 
     },
 
+    // Get one repository
+    getById: async (repositoryId) => {
+
+        return await apiRequest(`/repositories/${repositoryId}`, {
+            method: "GET"
+        });
+
+    },
+
+    // Clone repository
     clone: async (repositoryId) => {
 
         return await apiRequest(`/repositories/${repositoryId}/clone`, {
@@ -160,6 +149,7 @@ const RepositoryAPI = {
 
     },
 
+    // Index repository
     index: async (repositoryId) => {
 
         return await apiRequest(`/repositories/${repositoryId}/index`, {
@@ -168,11 +158,20 @@ const RepositoryAPI = {
 
     },
 
-    ask: async (repositoryId, question) => {
+    // Re-index existing repository
+    reindex: async (repositoryId) => {
 
-        return await apiRequest(`/repositories/${repositoryId}/ask`, {
-            method: "POST",
-            body: JSON.stringify({ question })
+        return await apiRequest(`/repositories/${repositoryId}/reindex`, {
+            method: "POST"
+        });
+
+    },
+
+    // Delete repository
+    delete: async (repositoryId) => {
+
+        return await apiRequest(`/repositories/${repositoryId}`, {
+            method: "DELETE"
         });
 
     }
@@ -180,13 +179,13 @@ const RepositoryAPI = {
 };
 
 
-/* =========================================
-   CONVERSATION APIs
-========================================= */
+// =========================================
+// CONVERSATION API
+// =========================================
 
 const ConversationAPI = {
 
-    // Create a new conversation
+    // Create conversation
     create: async (repositoryId, title = "New Conversation") => {
 
         return await apiRequest("/conversations/", {
@@ -199,7 +198,7 @@ const ConversationAPI = {
 
     },
 
-    // Get all conversations belonging to the logged-in user
+    // Get all conversations
     getAll: async () => {
 
         return await apiRequest("/conversations/", {
@@ -208,7 +207,7 @@ const ConversationAPI = {
 
     },
 
-    // Get one conversation with its saved messages
+    // Get conversation details
     getById: async (conversationId) => {
 
         return await apiRequest(`/conversations/${conversationId}`, {
@@ -217,11 +216,33 @@ const ConversationAPI = {
 
     },
 
-    // Delete a conversation
+    // Delete conversation
     delete: async (conversationId) => {
 
         return await apiRequest(`/conversations/${conversationId}`, {
             method: "DELETE"
+        });
+
+    }
+
+};
+
+
+// =========================================
+// CHAT API
+// =========================================
+
+const ChatAPI = {
+
+    // Ask question about repository
+    ask: async (repositoryId, question, conversationId) => {
+
+        return await apiRequest(`/repositories/${repositoryId}/ask`, {
+            method: "POST",
+            body: JSON.stringify({
+                question: question,
+                conversation_id: conversationId
+            })
         });
 
     }

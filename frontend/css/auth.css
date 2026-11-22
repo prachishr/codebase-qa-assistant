@@ -266,92 +266,79 @@
 }
 
 /* =========================================
-   LIGHT THEME OVERRIDES FOR AUTH
+   LIGHT THEME OVERRIDES FOR AUTH (PURE WHITE BACKGROUND)
 ========================================= */
 
-[data-theme=\"light\"] .auth-page {
-    background: #f8fafc;
+[data-theme="light"] .auth-page {
+    background: #ffffff !important;
 }
 
-[data-theme=\"light\"] .auth-branding {
-    background:
-        radial-gradient(
-            circle at 20% 40%,
-            rgba(124, 58, 237, 0.1),
-            transparent 45%
-        ),
-        linear-gradient(145deg, #f1f5f9, #e2e8f0);
-    border-right: 1px solid rgba(0, 0, 0, 0.08);
+[data-theme="light"] .auth-branding {
+    background: radial-gradient(circle at 20% 40%, rgba(124, 58, 237, 0.08), transparent 45%), #f8fafc !important;
+    border-right: 1px solid #e2e8f0 !important;
 }
 
-[data-theme=\"light\"] .auth-branding h1 {
-    color: #0f172a;
+[data-theme="light"] .auth-branding h1 {
+    color: #0f172a !important;
 }
 
-[data-theme=\"light\"] .auth-branding h1 span {
-    color: #7c3aed;
+[data-theme="light"] .auth-branding h1 span {
+    color: #7c3aed !important;
 }
 
-[data-theme=\"light\"] .auth-branding p {
-    color: #64748b;
+[data-theme="light"] .auth-branding p {
+    color: #64748b !important;
 }
 
-[data-theme=\"light\"] .branding-points div {
-    color: #334155;
+[data-theme="light"] .branding-points div {
+    color: #334155 !important;
 }
 
-[data-theme=\"light\"] .branding-footer {
-    color: #94a3b8;
+[data-theme="light"] .branding-footer {
+    color: #94a3b8 !important;
 }
 
-[data-theme=\"light\"] .auth-form-section {
-    background: #ffffff;
+[data-theme="light"] .auth-form-section {
+    background: #ffffff !important;
 }
 
-[data-theme=\"light\"] .back-link {
-    color: #64748b;
+[data-theme="light"] .back-link {
+    color: #64748b !important;
 }
 
-[data-theme=\"light\"] .back-link:hover {
-    color: #7c3aed;
+[data-theme="light"] .back-link:hover {
+    color: #7c3aed !important;
 }
 
-[data-theme=\"light\"] .auth-heading h2 {
-    color: #0f172a;
+[data-theme="light"] .auth-heading h2 {
+    color: #0f172a !important;
 }
 
-[data-theme=\"light\"] .auth-heading p {
-    color: #64748b;
+[data-theme="light"] .auth-heading p {
+    color: #64748b !important;
 }
 
-[data-theme=\"light\"] .form-group label {
-    color: #334155;
+[data-theme="light"] .form-group label {
+    color: #334155 !important;
 }
 
-[data-theme=\"light\"] .form-group input {
-    background: #f8fafc;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    color: #0f172a;
+[data-theme="light"] .form-group input {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
 }
 
-[data-theme=\"light\"] .form-group input:focus {
-    border-color: #7c3aed;
-    background: #ffffff;
+[data-theme="light"] .form-group input:focus {
+    border-color: #7c3aed !important;
+    background: #ffffff !important;
 }
 
-[data-theme=\"light\"] .auth-switch {
-    color: #64748b;
+[data-theme="light"] .auth-switch {
+    color: #64748b !important;
 }
 
-[data-theme=\"light\"] .auth-switch a {
-    color: #7c3aed;
-}
-
-.auth-theme-toggle {
-    position: absolute;
-    top: 24px;
-    right: 24px;
-    z-index: 10;
+[data-theme="light"] .auth-switch a {
+    color: #7c3aed !important;
 }
 
 .auth-top-bar {

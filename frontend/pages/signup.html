@@ -8,6 +8,7 @@
 
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/auth.css">
+    <script src="../js/theme.js"></script>
 </head>
 
 <body class="auth-page">
@@ -53,9 +54,14 @@
 
             <div class="auth-form-wrapper">
 
-                <a href="../index.html" class="back-link">
-                    ← Back to home
-                </a>
+                <div class="auth-top-bar">
+                    <a href="../index.html" class="back-link">
+                        ← Back to home
+                    </a>
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle Light/Dark Theme">
+                        <span class="theme-icon">☀️</span>
+                    </button>
+                </div>
 
                 <div class="auth-heading">
                     <h2>Create your account</h2>

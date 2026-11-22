@@ -459,3 +459,153 @@ a {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* =========================================
+   THEME TOGGLE & LIGHT THEME STYLES
+========================================= */
+
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.25s ease;
+}
+
+.theme-toggle:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    background: rgba(139, 92, 246, 0.15);
+}
+
+[data-theme=\"light\"] {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #f1f5f9;
+    --bg-card: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --accent: #7c3aed;
+    --accent-light: #6d28d9;
+    --border: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme=\"light\"] body {
+    background: #f8fafc;
+    color: #0f172a;
+}
+
+[data-theme=\"light\"] .navbar {
+    background: rgba(255, 255, 255, 0.92);
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme=\"light\"] .nav-links a {
+    color: #64748b;
+}
+
+[data-theme=\"light\"] .nav-links a:hover {
+    color: #0f172a;
+}
+
+[data-theme=\"light\"] .hero h1 {
+    color: #0f172a;
+}
+
+[data-theme=\"light\"] .hero h1 span {
+    color: #7c3aed;
+}
+
+[data-theme=\"light\"] .hero-description {
+    color: #475569;
+}
+
+[data-theme=\"light\"] .hero-badge {
+    background: rgba(124, 58, 237, 0.08);
+    border-color: rgba(124, 58, 237, 0.2);
+    color: #6d28d9;
+}
+
+[data-theme=\"light\"] .hero-note {
+    color: #64748b;
+}
+
+[data-theme=\"light\"] .hero-note span {
+    color: #059669;
+}
+
+[data-theme=\"light\"] .section-heading h2 {
+    color: #0f172a;
+}
+
+[data-theme=\"light\"] .section-heading p {
+    color: #64748b;
+}
+
+[data-theme=\"light\"] .feature-card {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme=\"light\"] .feature-card:hover {
+    border-color: rgba(124, 58, 237, 0.3);
+    box-shadow: 0 10px 25px rgba(124, 58, 237, 0.08);
+}
+
+[data-theme=\"light\"] .feature-card h3 {
+    color: #0f172a;
+}
+
+[data-theme=\"light\"] .feature-card p {
+    color: #64748b;
+}
+
+[data-theme=\"light\"] .feature-icon {
+    background: rgba(124, 58, 237, 0.1);
+    color: #7c3aed;
+}
+
+[data-theme=\"light\"] .btn-outline {
+    border-color: rgba(0, 0, 0, 0.15);
+    color: #0f172a !important;
+}
+
+[data-theme=\"light\"] .btn-outline:hover {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: #7c3aed;
+    color: #7c3aed !important;
+}
+
+[data-theme=\"light\"] .btn-secondary {
+    background: #f1f5f9;
+    color: #0f172a;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme=\"light\"] .btn-secondary:hover {
+    background: #e2e8f0;
+}
+
+[data-theme=\"light\"] .footer {
+    background: #f1f5f9;
+    border-top-color: rgba(0, 0, 0, 0.08);
+    color: #64748b;
+}
+
+[data-theme=\"light\"] .footer p,
+[data-theme=\"light\"] .footer span {
+    color: #64748b;
+}
+
+[data-theme=\"light\"] .theme-toggle {
+    background: #f1f5f9;
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #0f172a;
+}

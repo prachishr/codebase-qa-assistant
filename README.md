@@ -6,6 +6,9 @@ An AI-powered codebase companion that helps developers understand GitHub reposit
 **GitHub Repository:** [prachishr/codebase-qa-assistant](https://github.com/prachishr/codebase-qa-assistant)
 
 ---
+### 🚀 Live Demo
+
+[Open Codebase QA Assistant](https://codebase-qa-assistant-frontend.vercel.app/)
 
 ## Overview
 
@@ -35,7 +38,24 @@ The application also provides user authentication and PostgreSQL-backed conversa
   <img src="https://img.shields.io/badge/Render-Deployment-46E3B7?style=for-the-badge&logo=render&logoColor=black" alt="Render">
 </p>
 
+## Application Screenshots
 
+### Main Page
+The main interface of Codebase QA Assistant.
+
+![Main Page](assets/Main-Page.jpg)
+
+### Login Page
+User authentication interface for accessing the application.
+
+![Login Page](assets/signup.jpg)
+
+### Dashboard
+Displays indexed repositories and conversation history, allowing users to manage their codebase interactions.
+
+![Dashboard](assets/Dashboard.jpg)
+
+---
 
 ## Features
 

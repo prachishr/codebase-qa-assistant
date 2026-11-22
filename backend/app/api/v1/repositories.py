@@ -1,30 +1,43 @@
 
+import shutil
+import traceback
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from requests import request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException, Depends
-from backend.app.models.conversation import Conversation
-from backend.app.models.message import Message
-from backend.app.schemas import conversation
-from backend.app.schemas.chat import AskRequest
-from backend.app.services.rag_service import WORKSPACE_DIR
+from starlette.concurrency import run_in_threadpool
 
 from backend.app.db.database import get_db
+from backend.app.core.dependencies import get_current_user
+
 from backend.app.models.user import User
 from backend.app.models.repository import Repository
 from backend.app.models.conversation import Conversation
+from backend.app.models.message import Message
+
 from backend.app.schemas.repository import (
     RepositoryCreate,
     RepositoryResponse,
 )
-from backend.app.core.dependencies import get_current_user
-import traceback
+from backend.app.schemas.chat import AskRequest
+
+from backend.app.services.github_service import (
+    WORKSPACE_DIR,
+    clone_repository,
+)
+from backend.app.services.rag_service import index_repository
+
+from core.rag import generate_answer
+
 
 router = APIRouter(prefix="/repositories", tags=["Repositories"])
 
 
-# Add a GitHub repository
+# =========================================
+# ADD A GITHUB REPOSITORY
+# =========================================
+
 @router.post(
     "/",
     response_model=RepositoryResponse,
@@ -44,6 +57,7 @@ async def add_repository(
             Repository.user_id == current_user.id
         )
     )
+
     existing_repo = result.scalar_one_or_none()
 
     if existing_repo:
@@ -65,22 +79,28 @@ async def add_repository(
     return new_repository
 
 
-# List repositories belonging to the logged-in user
+# =========================================
+# LIST USER REPOSITORIES
+# =========================================
+
 @router.get("/", response_model=list[RepositoryResponse])
 async def list_repositories(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     result = await db.execute(
-        select(Repository).where(
-            Repository.user_id == current_user.id
-        ).order_by(Repository.id.desc())
+        select(Repository)
+        .where(Repository.user_id == current_user.id)
+        .order_by(Repository.id.desc())
     )
 
     return result.scalars().all()
 
 
-# Get one repository belonging to the logged-in user
+# =========================================
+# GET ONE REPOSITORY
+# =========================================
+
 @router.get("/{repository_id}", response_model=RepositoryResponse)
 async def get_repository(
     repository_id: int,
@@ -105,13 +125,17 @@ async def get_repository(
     return repository
 
 
-# Delete a repository belonging to the logged-in user
+# =========================================
+# DELETE REPOSITORY AND ASSOCIATED DATA
+# =========================================
+
 @router.delete("/{repository_id}")
 async def delete_repository(
     repository_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    # 1. Verify repository ownership
     result = await db.execute(
         select(Repository).where(
             Repository.id == repository_id,
@@ -127,26 +151,87 @@ async def delete_repository(
             detail="Repository not found."
         )
 
-    # Preserve conversations rather than deleting their history
+    # 2. Find associated conversations
     conversation_result = await db.execute(
-        select(Conversation.id).where(
-            Conversation.repository_id == repository_id
-        ).limit(1)
+        select(Conversation).where(
+            Conversation.repository_id == repository_id,
+            Conversation.user_id == current_user.id
+        )
     )
 
-    if conversation_result.scalar_one_or_none() is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="This repository has conversations and cannot be deleted yet."
+    conversations = conversation_result.scalars().all()
+
+    conversation_ids = [
+        conversation.id for conversation in conversations
+    ]
+
+    # 3. Delete associated messages
+    if conversation_ids:
+        message_result = await db.execute(
+            select(Message).where(
+                Message.conversation_id.in_(conversation_ids)
+            )
         )
 
+        messages = message_result.scalars().all()
+
+        for message in messages:
+            await db.delete(message)
+
+    # 4. Delete conversations
+    for conversation in conversations:
+        await db.delete(conversation)
+
+    # 5. Delete repository record
     await db.delete(repository)
+
     await db.commit()
 
-    return {"message": "Repository deleted successfully."}
+    # 6. Remove cloned repository and FAISS index
+    base_path = WORKSPACE_DIR.resolve()
 
-from backend.app.services.github_service import clone_repository
+    workspace_path = (
+        base_path
+        / f"user_{current_user.id}"
+        / f"repository_{repository_id}"
+    ).resolve()
 
+    try:
+        # Ensure the target is inside the workspace directory
+        workspace_path.relative_to(base_path)
+
+        if workspace_path.exists():
+            await run_in_threadpool(
+                shutil.rmtree,
+                workspace_path
+            )
+
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Invalid repository workspace path."
+        )
+
+    except OSError:
+        return {
+            "message": (
+                "Repository and database records deleted, "
+                "but workspace cleanup failed."
+            ),
+            "repository_id": repository_id,
+            "workspace_cleanup": "failed"
+        }
+
+    return {
+        "message": "Repository and associated data deleted successfully.",
+        "repository_id": repository_id,
+        "workspace_cleanup": "successful"
+    }
+
+
+# =========================================
+# CLONE GITHUB REPOSITORY
+# =========================================
 
 @router.post("/{repository_id}/clone")
 async def clone_github_repository(
@@ -170,10 +255,11 @@ async def clone_github_repository(
         )
 
     try:
-        local_path = clone_repository(
-            github_url=repository.github_url,
-            user_id=current_user.id,
-            repository_id=repository.id
+        local_path = await run_in_threadpool(
+            clone_repository,
+            repository.github_url,
+            current_user.id,
+            repository.id
         )
 
         return {
@@ -201,8 +287,10 @@ async def clone_github_repository(
             detail=str(exc)
         )
 
-from starlette.concurrency import run_in_threadpool
-from backend.app.services.rag_service import index_repository
+
+# =========================================
+# INDEX GITHUB REPOSITORY
+# =========================================
 
 @router.post("/{repository_id}/index")
 async def index_github_repository(
@@ -250,7 +338,7 @@ async def index_github_repository(
             detail=str(exc)
         )
 
-    except Exception as exc:
+    except Exception:
         print("\n========== REPOSITORY INDEXING ERROR ==========")
         traceback.print_exc()
         print("================================================\n")
@@ -260,13 +348,10 @@ async def index_github_repository(
             detail="Repository indexing failed. Check the backend terminal."
         )
 
-from pathlib import Path
-from starlette.concurrency import run_in_threadpool
 
-from core.rag import generate_answer
-from backend.app.services.rag_service import WORKSPACE_DIR
-
-
+# =========================================
+# ASK QUESTIONS ABOUT REPOSITORY
+# =========================================
 
 @router.post("/{repository_id}/ask")
 async def ask_repository(
@@ -287,7 +372,7 @@ async def ask_repository(
 
     if repository is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Repository not found."
         )
 
@@ -304,7 +389,7 @@ async def ask_repository(
 
     if conversation is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversation not found for this repository."
         )
 
@@ -318,11 +403,11 @@ async def ask_repository(
 
     if not index_path.exists():
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Repository has not been indexed yet."
         )
 
-    # 4. Generate AI response using the existing RAG service
+    # 4. Generate AI response
     try:
         rag_result = await run_in_threadpool(
             generate_answer,
@@ -332,12 +417,11 @@ async def ask_repository(
 
     except Exception as error:
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Unable to generate answer: {str(error)}"
         )
 
     answer, sources = rag_result
-    
 
     # 5. Save user question
     user_message = Message(
@@ -345,7 +429,8 @@ async def ask_repository(
         content=request.question,
         conversation_id=conversation.id
     )
-    # Generate a title from the first question
+
+    # Generate title from the first question
     if conversation.title == "New Conversation":
 
         conversation.title = request.question.strip()[:60]
@@ -362,7 +447,7 @@ async def ask_repository(
 
     db.add_all([user_message, assistant_message])
 
-    # 7. Save both messages in Neon PostgreSQL
+    # 7. Save messages in PostgreSQL
     await db.commit()
 
     return {
@@ -373,4 +458,3 @@ async def ask_repository(
         "answer": answer,
         "sources": sources
     }
-

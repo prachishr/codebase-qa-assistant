@@ -3,7 +3,6 @@ import os
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from .ingestion import load_repository
-from tree_sitter_language_pack import get_parser
 
 
 CODE_EXTENSIONS = {
@@ -30,6 +29,7 @@ def get_code_chunks(content, language, text_splitter):
     """
 
     try:
+        from tree_sitter_language_pack import get_parser
         parser = get_parser(language)
 
         source_bytes = content.encode("utf-8")

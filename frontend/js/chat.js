@@ -10,7 +10,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const repositoryId = params.get("repository_id");
     const conversationId = params.get("conversation_id");
 
-    const chatMessages = document.getElementById("chatMessages");
     const dashboardContent = document.querySelector(".dashboard-content");
 
     let activeConversation = null;
@@ -47,13 +46,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             conversations.forEach((conversation) => {
 
-                const item = document.createElement("button");
+                const item = document.createElement("div");
+                item.className = "conversation-item-wrapper";
 
-                item.type = "button";
-                item.className = "conversation-item";
+                const conversationButton = document.createElement("button");
+
+                conversationButton.type = "button";
+                conversationButton.className = "conversation-item";
 
                 if (String(conversation.id) === conversationId) {
-                    item.classList.add("active");
+                    conversationButton.classList.add("active");
                 }
 
                 const title = document.createElement("span");
@@ -62,17 +64,82 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 const repository = document.createElement("small");
                 repository.className = "conversation-repository";
-                repository.textContent = `📦 ${conversation.repository_name}`;
+                repository.textContent =
+                    `📦 ${conversation.repository_name}`;
 
-                item.append(title, repository);
+                conversationButton.append(title, repository);
 
-                item.addEventListener("click", () => {
+                conversationButton.addEventListener("click", () => {
 
                     window.location.href =
                         `dashboard.html?repository_id=${conversation.repository_id}` +
                         `&conversation_id=${conversation.id}`;
 
                 });
+
+
+                // Delete conversation button
+                const deleteButton = document.createElement("button");
+
+                deleteButton.type = "button";
+                deleteButton.className = "conversation-delete-btn";
+                deleteButton.textContent = "×";
+                deleteButton.title = "Delete conversation";
+                deleteButton.setAttribute(
+                    "aria-label",
+                    `Delete conversation ${conversation.title}`
+                );
+
+                deleteButton.addEventListener("click", async (event) => {
+
+                    event.stopPropagation();
+
+                    const confirmed = window.confirm(
+                        `Are you sure you want to delete "${conversation.title}"?\n\nAll messages in this conversation will also be permanently deleted.`
+                    );
+
+                    if (!confirmed) return;
+
+                    try {
+
+                        deleteButton.disabled = true;
+                        deleteButton.textContent = "...";
+
+                        await ConversationAPI.delete(conversation.id);
+
+                        // If the deleted conversation is currently open,
+                        // return to the repository dashboard.
+                        if (String(conversation.id) === conversationId) {
+
+                            window.location.href =
+                                "dashboard.html";
+
+                            return;
+
+                        }
+
+                        // Refresh conversation history
+                        await loadConversationHistory();
+
+                    } catch (error) {
+
+                        console.error(
+                            "Conversation deletion failed:",
+                            error
+                        );
+
+                        alert(
+                            `Unable to delete conversation: ${error.message}`
+                        );
+
+                        deleteButton.disabled = false;
+                        deleteButton.textContent = "×";
+
+                    }
+
+                });
+
+                item.append(conversationButton, deleteButton);
 
                 conversationList.appendChild(item);
 
@@ -177,6 +244,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     </button>
 
                 </div>
+
             </div>
 
         </div>
@@ -203,12 +271,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     `;
 
     dashboardContent.appendChild(chatSection);
-    // Automatically bring the chat interface into view
+
     requestAnimationFrame(() => {
+
         chatSection.scrollIntoView({
             behavior: "smooth",
             block: "start"
         });
+
     });
 
 
@@ -234,7 +304,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 await ConversationAPI.getById(conversationId);
 
             if (String(activeConversation.repository_id) !== repositoryId) {
-                throw new Error("Conversation does not belong to this repository.");
+                throw new Error(
+                    "Conversation does not belong to this repository."
+                );
             }
 
             activeConversation.messages.forEach((message) => {
@@ -262,7 +334,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     } catch (error) {
 
-        repositoryNameElement.textContent = "Unable to open conversation";
+        repositoryNameElement.textContent =
+            "Unable to open conversation";
 
         messagesContainer.innerHTML = "";
 
@@ -276,15 +349,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     }
 
-    // Position the page at the chat interface after loading history
     requestAnimationFrame(() => {
+
         chatSection.scrollIntoView({
             behavior: "smooth",
             block: "start"
         });
 
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        messagesContainer.scrollTop =
+            messagesContainer.scrollHeight;
+
     });
+
+
     /* =====================================
        8. DISPLAY USER MESSAGE
     ===================================== */
@@ -302,7 +379,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         messagesContainer.appendChild(messageElement);
 
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        messagesContainer.scrollTop =
+            messagesContainer.scrollHeight;
 
     }
 
@@ -347,7 +425,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                     source.file || source.path || "Repository source";
 
                 const sourcePath = document.createElement("small");
-                sourcePath.textContent = source.path || source.file || "";
+                sourcePath.textContent =
+                    source.path || source.file || "";
 
                 sourceCard.append(fileName, sourcePath);
 
@@ -361,7 +440,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         messagesContainer.appendChild(messageElement);
 
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        messagesContainer.scrollTop =
+            messagesContainer.scrollHeight;
 
     }
 
@@ -382,7 +462,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         messagesContainer.appendChild(loadingElement);
 
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        messagesContainer.scrollTop =
+            messagesContainer.scrollHeight;
 
     }
 
@@ -397,8 +478,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         showLoadingMessage();
 
-        const sendButton = document.getElementById("sendQuestionBtn");
-        const questionInput = document.getElementById("chatQuestion");
+        const sendButton =
+            document.getElementById("sendQuestionBtn");
+
+        const questionInput =
+            document.getElementById("chatQuestion");
 
         sendButton.disabled = true;
         questionInput.disabled = true;
@@ -419,6 +503,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             document.getElementById("aiLoadingMessage")?.remove();
 
             addAIMessage(response);
+
+            // Refresh sidebar in case the conversation title changed
+            await loadConversationHistory();
 
         } catch (error) {
 
@@ -453,7 +540,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         event.preventDefault();
 
-        const questionInput = document.getElementById("chatQuestion");
+        const questionInput =
+            document.getElementById("chatQuestion");
 
         const question = questionInput.value.trim();
 

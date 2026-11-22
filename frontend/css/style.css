@@ -420,3 +420,42 @@ a {
         text-align: center;
     }
 }
+
+/* Conversation history item layout */
+
+.conversation-item-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.conversation-item-wrapper .conversation-item {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Conversation delete button */
+
+.conversation-delete-btn {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #9ca3af;
+    font-size: 21px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.conversation-delete-btn:hover {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+}
+
+.conversation-delete-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

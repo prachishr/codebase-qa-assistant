@@ -9,7 +9,7 @@ from backend.app.core.dependencies import get_current_user
 from backend.app.models.user import User
 from backend.app.models.repository import Repository
 from backend.app.models.conversation import Conversation
-
+from backend.app.models.message import Message
 from backend.app.schemas.conversation import (
     ConversationCreate,
     ConversationResponse,
@@ -165,4 +165,48 @@ async def get_conversation(
         "repository_id": conversation.repository_id,
         "repository_name": conversation.repository.name,
         "messages": messages
+    }
+
+# =========================================
+# DELETE A CONVERSATION
+# =========================================
+
+@router.delete("/{conversation_id}")
+async def delete_conversation(
+    conversation_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+
+    result = await db.execute(
+        select(Conversation)
+        .options(
+            selectinload(Conversation.messages)
+        )
+        .where(
+            Conversation.id == conversation_id,
+            Conversation.user_id == current_user.id
+        )
+    )
+
+    conversation = result.scalar_one_or_none()
+
+    if conversation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found."
+        )
+
+    # Delete associated messages first
+    for message in conversation.messages:
+        await db.delete(message)
+
+    # Delete the conversation
+    await db.delete(conversation)
+
+    await db.commit()
+
+    return {
+        "message": "Conversation deleted successfully.",
+        "conversation_id": conversation_id
     }

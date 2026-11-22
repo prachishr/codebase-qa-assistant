@@ -7,6 +7,9 @@
 const API_BASE_URL = "https://codebase-qa-assistant-r80e.onrender.com/api/v1";
 
 
+// Local FastAPI server
+// const API_BASE_URL = "http://127.0.0.1:8000/api/v1";
+
 /* =========================================
    API REQUEST HANDLER
 ========================================= */
@@ -46,24 +49,30 @@ async function apiRequest(endpoint, options = {}) {
 
         const data = await response.json().catch(() => null);
 
+        // Handle unsuccessful responses
         if (!response.ok) {
 
             const errorMessage =
                 data?.detail || "Something went wrong. Please try again.";
 
-            throw new Error(errorMessage);
+            const error = new Error(errorMessage);
+            error.status = response.status;
+
+            throw error;
         }
 
         return data;
 
     } catch (error) {
 
+        // Handle network and connection errors
         if (error instanceof TypeError) {
             throw new Error(
                 "Unable to connect to the server. Please check whether the backend is running."
             );
         }
 
+        // Pass API errors to the calling function
         throw error;
     }
 }
@@ -171,7 +180,6 @@ const RepositoryAPI = {
 };
 
 
-
 /* =========================================
    CONVERSATION APIs
 ========================================= */
@@ -205,6 +213,15 @@ const ConversationAPI = {
 
         return await apiRequest(`/conversations/${conversationId}`, {
             method: "GET"
+        });
+
+    },
+
+    // Delete a conversation
+    delete: async (conversationId) => {
+
+        return await apiRequest(`/conversations/${conversationId}`, {
+            method: "DELETE"
         });
 
     }

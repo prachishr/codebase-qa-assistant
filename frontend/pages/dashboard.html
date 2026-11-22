@@ -228,18 +228,6 @@
             <form id="repositoryForm">
 
                 <div class="form-group">
-                    <label for="repositoryName">Repository Name</label>
-
-                    <input
-                        type="text"
-                        id="repositoryName"
-                        name="name"
-                        placeholder="e.g. movie-recommender"
-                        required
-                    >
-                </div>
-
-                <div class="form-group">
                     <label for="githubUrl">GitHub Repository URL</label>
 
                     <input
@@ -251,10 +239,11 @@
                     >
                 </div>
 
-                <p id="repositoryMessage" class="form-message" role="status"></p>
+                <!-- AUTOMATIC CLONING AND INDEXING STATUS -->
+                <div id="repositoryProgress" class="form-message" role="status" aria-live="polite"></div>
 
                 <button type="submit" class="btn btn-primary modal-submit">
-                    Connect Repository
+                    Connect & Index Repository
                 </button>
 
             </form>

@@ -59,18 +59,19 @@ Displays indexed repositories and conversation history, allowing users to manage
 
 ## Features
 
-- **User Authentication:** Sign-up and login through the FastAPI backend.
-- **GitHub Repository Connection:** Clone and analyze supported public repositories.
-- **Repository-Aware Question Answering:** Ask questions about the connected codebase.
+- **User Authentication & Account Recovery:** Sign-up, login, sign-out, change password, and forgot/reset password using single-use reset links sent via SMTP (with terminal fallback in local dev).
+- **GitHub Repository Connection:** Clone, index, re-index, and delete supported public repositories with `Indexed` / `Not Indexed` status badges.
+- **Background Indexing & Live Progress:** Asynchronous repository indexing and re-indexing with status polling.
+- **Repository-Aware Question Answering:** Ask questions about the connected codebase with one-click suggested prompts.
 - **Code and Documentation Ingestion:** Process source files and project documentation.
-- **AST-Aware Code Chunking:** Identify meaningful code structures such as functions, methods, and classes where supported.
-- **Semantic Search:** Generate embeddings using Sentence Transformers.
-- **FAISS Vector Search:** Retrieve relevant repository chunks.
+- **AST-Aware Code Chunking:** Identify meaningful code structures such as functions, methods, and classes where supported (with automatic text-based fallback).
+- **Local ONNX Semantic Search:** Generate 384-dimensional `all-MiniLM-L6-v2` embeddings locally using ONNX Runtime and HuggingFace `tokenizers` — completely free with no API keys, PyTorch overhead, or daily rate limits.
+- **FAISS Vector Search:** Retrieve relevant repository chunks with in-memory index caching and dimension validation.
 - **Hybrid Retrieval:** Combine keyword, code-symbol, project-overview, and semantic retrieval strategies.
 - **Groq-Powered Responses:** Generate answers using retrieved repository context.
 - **Source References:** Display relevant source files alongside answers.
-- **Persistent Conversations:** Store chat history in PostgreSQL.
-- **Previous Chats:** Reopen earlier conversations and view their associated repository.
+- **Persistent Conversations:** Store chat history in Neon PostgreSQL and revisit previous chats.
+- **Light & Dark Themes:** Persistent theme toggle across all pages.
 
 ---
 
@@ -90,7 +91,7 @@ flowchart TD
     E --> G[GitHub Repository]
     G --> H[Code and Documentation Ingestion]
     H --> I[AST-Aware Chunking]
-    I --> J[Text Embeddings<br/>Sentence Transformers]
+    I --> J[Text Embeddings<br/>ONNX Runtime / MiniLM]
     J --> K[FAISS Vector Store]
 
     B --> L[User Question]
@@ -111,8 +112,8 @@ flowchart TD
 1. The user connects a GitHub repository.
 2. The backend clones and processes the repository.
 3. Source code and documentation are divided into meaningful chunks.
-4. Sentence Transformers generates vector embeddings.
-5. FAISS stores the embeddings for similarity search.
+4. Local ONNX Runtime (`all-MiniLM-L6-v2`) generates 384-dim vector embeddings.
+5. FAISS stores the embeddings locally for similarity search.
 6. The user submits a question through the frontend.
 7. The retrieval service finds relevant repository content.
 8. Retrieved context is passed to the Groq LLM.
@@ -135,11 +136,11 @@ Code and documentation are processed according to their content:
 
 **3. Embeddings**
 
-Text chunks are converted into vector embeddings using:
+Text chunks are converted into 384-dimensional vector embeddings using:
 
-`sentence-transformers/all-MiniLM-L6-v2`
+`sentence-transformers/all-MiniLM-L6-v2` (via **ONNX Runtime** + **HuggingFace `tokenizers`**)
 
-The embedding model runs locally.
+The embedding model runs 100% locally on CPU without PyTorch or external embedding API limits.
 
 **4. Retrieval**
 
@@ -187,16 +188,17 @@ Conversation history is associated with the authenticated user. Conversations ca
 | GitPython | GitHub repository cloning and Git operations |
 | Tree-sitter | AST-based code parsing |
 | LangChain | Document and vector-store integration |
-| Sentence Transformers | Local embedding generation |
+| ONNX Runtime & Tokenizers | Lightweight local embedding inference (no PyTorch) |
 | FAISS | Vector similarity search |
 | Groq | LLM inference |
+| smtplib (Python stdlib) | Password reset emails via SMTP |
 | python-dotenv | Environment variable configuration |
 
 ### Core AI Components
 
 | Component | Model |
 |---|---|
-| Embedding Model | `sentence-transformers/all-MiniLM-L6-v2` |
+| Embedding Model | `sentence-transformers/all-MiniLM-L6-v2` (ONNX) |
 | LLM | `openai/gpt-oss-20b` |
 
 ---
@@ -224,6 +226,7 @@ Codebase-QA-Assistant/
 │       ├── models/
 │       ├── schemas/
 │       └── services/
+│           ├── email_service.py
 │           ├── github_service.py
 │           └── rag_service.py
 │
@@ -240,6 +243,7 @@ Codebase-QA-Assistant/
 │   ├── pages/
 │   │   ├── login.html
 │   │   ├── signup.html
+│   │   ├── reset-password.html
 │   │   └── dashboard.html
 │   ├── css/
 │   │   ├── style.css
@@ -249,9 +253,11 @@ Codebase-QA-Assistant/
 │       ├── api.js
 │       ├── auth.js
 │       ├── dashboard.js
-│       └── chat.js
+│       ├── chat.js
+│       └── theme.js
 │
 ├── workspaces/
+├── run.py
 ├── requirements.txt
 ├── .gitignore
 ├── .env
@@ -316,6 +322,14 @@ JWT_SECRET_KEY=your_secure_jwt_secret
 
 FRONTEND_URL=http://localhost:5173
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+PASSWORD_RESET_EXPIRE_MINUTES=15
+
+# Optional (for Forgot Password emails; if omitted, reset link logs to backend terminal)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_gmail@gmail.com
+SMTP_PASSWORD=your_16_char_app_password
+SMTP_FROM_EMAIL=your_gmail@gmail.com
 ```
 
 Replace the placeholder values with your actual credentials.
@@ -329,6 +343,10 @@ Replace the placeholder values with your actual credentials.
 | `JWT_SECRET_KEY` | Secret key used for JWT authentication |
 | `FRONTEND_URL` | Frontend application URL |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token expiration time in minutes |
+| `PASSWORD_RESET_EXPIRE_MINUTES` | Reset link expiration time in minutes (default `15`) |
+| `SMTP_HOST` / `SMTP_PORT` | SMTP server and TLS port (default `smtp.gmail.com` / `587`) |
+| `SMTP_USER` / `SMTP_PASSWORD` | SMTP login email and App Password (optional in local dev) |
+| `SMTP_FROM_EMAIL` | Sender email address for password reset emails |
 
 **Important:** Never commit your `.env` file to GitHub or expose your API keys, database credentials, or JWT secret.
 
@@ -337,10 +355,16 @@ Replace the placeholder values with your actual credentials.
 From the project root, execute:
 
 ```bash
+python run.py
+```
+
+Or directly via `uvicorn` (excluding `workspaces/` from reload watching):
+
+```bash
 python -m uvicorn backend.app.main:app --reload --reload-dir backend --reload-dir core
 ```
 
-*(Using `--reload-dir backend --reload-dir core` prevents `uvicorn` from restarting when repositories are cloned into `workspaces/`.)*
+*(Using `run.py` or `--reload-dir backend --reload-dir core` prevents `uvicorn` from restarting when repositories are cloned into `workspaces/`.)*
 
 The backend will be available at:
 
@@ -358,9 +382,9 @@ Health endpoint:
 
 ### 8. Open the Frontend
 
-Open `frontend/index.html` using a local static server, such as the VS Code Live Server extension.
+Open `frontend/index.html` using a local static server, such as the VS Code Live Server extension (`http://127.0.0.1:5500`).
 
-Make sure the frontend API configuration points to the running FastAPI backend.
+`frontend/js/api.js` automatically uses `http://127.0.0.1:8000/api/v1` when opened on `localhost` / `127.0.0.1`, and the deployed Render backend in production.
 
 ---
 
@@ -386,7 +410,7 @@ After connecting a repository, users can ask:
 | FastAPI | Provides a structured backend API |
 | HTML, CSS, and JavaScript | Provides a separate frontend |
 | Tree-sitter | Helps identify meaningful code structures |
-| MiniLM Embeddings | Generates lightweight semantic representations |
+| ONNX Runtime (MiniLM) | Generates lightweight 384-dim embeddings locally without PyTorch |
 | FAISS | Enables local vector similarity search |
 | Groq | Provides LLM inference |
 | PostgreSQL | Stores persistent relational application data |
@@ -419,8 +443,7 @@ FAISS provided the required local vector similarity search without the problemat
 - Improved retrieval and reranking
 - Repository dependency visualization
 - Streaming LLM responses
-- Background repository indexing
-- Persistent vector-index storage
+- Persistent vector-index storage (e.g., `pgvector` / Qdrant)
 - Improved code and source highlighting
 - Repository-aware code generation
 

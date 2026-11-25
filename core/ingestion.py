@@ -74,116 +74,83 @@ def is_sensitive_file(filename):
     )
 
 
-def extract_code(repo_path):
-    """
-    Extract source code files from the repository.
-    """
+def _read_text_file(file_path, filename):
+    """Read a non-oversized UTF-8 text file, returning None if skipped or unreadable."""
+    try:
+        if os.path.getsize(file_path) > MAX_FILE_SIZE:
+            print(f"Skipping large file: {filename}")
+            return None
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            return f.read()
+    except OSError:
+        return None
 
-    documents = []
+
+def _is_documentation_file(filename):
+    lower = filename.lower()
+    return (
+        lower.endswith((".md", ".txt", ".rst"))
+        or lower in {"readme", "license", "changelog"}
+    )
+
+
+def _walk_repository_files(repo_path, include_code=True, include_docs=True):
+    """Walk repository once and extract code and/or documentation documents."""
+    code_docs = []
+    doc_docs = []
 
     for root, dirs, files in os.walk(repo_path):
-
-        # Ignore unnecessary folders
-        dirs[:] = [
-            d for d in dirs
-            if d.lower() not in IGNORED_DIRS
-        ]
+        dirs[:] = [d for d in dirs if d.lower() not in IGNORED_DIRS]
 
         for file in files:
-
             if is_sensitive_file(file):
                 print(f"Skipping sensitive file: {file}")
                 continue
 
             extension = os.path.splitext(file)[1].lower()
+            is_code = include_code and extension in CODE_EXTENSIONS
+            is_doc = include_docs and _is_documentation_file(file)
 
-            if extension in CODE_EXTENSIONS:
+            if not (is_code or is_doc):
+                continue
 
-                file_path = os.path.join(root, file)
-                try:
-                    if os.path.getsize(file_path) > MAX_FILE_SIZE:
-                        print(f"Skipping large file: {file}")
-                        continue
-                except OSError:
-                    continue
-                try:
-                    with open(
-                        file_path,
-                        "r",
-                        encoding="utf-8",
-                        errors="ignore"
-                    ) as f:
+            file_path = os.path.join(root, file)
+            content = _read_text_file(file_path, file)
+            if content is None:
+                continue
 
-                        content = f.read()
+            if is_code:
+                code_docs.append({
+                    "type": "code",
+                    "file": file,
+                    "path": file_path,
+                    "content": content,
+                })
+            if is_doc:
+                doc_docs.append({
+                    "type": "documentation",
+                    "file": file,
+                    "path": file_path,
+                    "content": content,
+                })
 
-                    documents.append({
-                        "type": "code",
-                        "file": file,
-                        "path": file_path,
-                        "content": content
-                    })
+    return code_docs, doc_docs
 
-                except Exception:
-                    pass
 
-    return documents
+def extract_code(repo_path):
+    """
+    Extract source code files from the repository.
+    """
+    code_docs, _ = _walk_repository_files(repo_path, include_code=True, include_docs=False)
+    return code_docs
 
 
 def extract_documentation(repo_path):
     """
     Extract README and Markdown documentation.
     """
-
-    documents = []
-
-    for root, dirs, files in os.walk(repo_path):
-
-        dirs[:] = [
-            d for d in dirs
-            if d.lower() not in IGNORED_DIRS
-        ]
-        
-
-        for file in files:
-            if is_sensitive_file(file):
-                print(f"Skipping sensitive file: {file}")
-                continue
-
-            if (
-                file.lower().endswith((".md", ".txt", ".rst"))
-                or file.lower() in {"readme", "license", "changelog"}
-            ):
-
-                file_path = os.path.join(root, file)
-
-                try:
-                    if os.path.getsize(file_path) > MAX_FILE_SIZE:
-                        print(f"Skipping large file: {file}")
-                        continue
-                except OSError:
-                    continue
-
-                try:
-                    with open(
-                        file_path,
-                        "r",
-                        encoding="utf-8",
-                        errors="ignore"
-                    ) as f:
-
-                        content = f.read()
-
-                    documents.append({
-                        "type": "documentation",
-                        "file": file,
-                        "path": file_path,
-                        "content": content
-                    })
-
-                except Exception:
-                    pass
-
-    return documents
+    _, doc_docs = _walk_repository_files(repo_path, include_code=False, include_docs=True)
+    return doc_docs
 
 
 def extract_git_history(repo_path):
@@ -192,9 +159,9 @@ def extract_git_history(repo_path):
     """
 
     documents = []
+    repo = None
 
     try:
-
         repo = Repo(repo_path)
 
         for commit in repo.iter_commits(max_count=100):
@@ -221,14 +188,19 @@ Commit Message:
 
         print("Could not read Git history:", e)
 
+    finally:
+        if repo is not None:
+            try:
+                repo.close()
+            except Exception:
+                pass
+
     return documents
 
 
 def load_repository(repo_path):
 
-    code = extract_code(repo_path)
-
-    documentation = extract_documentation(repo_path)
+    code, documentation = _walk_repository_files(repo_path, include_code=True, include_docs=True)
 
     git_history = extract_git_history(repo_path)
 

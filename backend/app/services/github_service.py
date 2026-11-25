@@ -1,11 +1,30 @@
 
+import os
+import shutil
+import stat
 import subprocess
+import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
 
 # Backend-specific workspace directory
 WORKSPACE_DIR = Path(__file__).resolve().parents[3] / "workspaces"
+
+
+def remove_directory(path: Path) -> None:
+    """Recursively remove a directory, clearing Windows read-only bits (e.g. .git packs)."""
+    if not path.exists():
+        return
+
+    def _handle_remove_readonly(func, target_path, _exc):
+        os.chmod(target_path, stat.S_IWRITE)
+        func(target_path)
+
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(path, onexc=_handle_remove_readonly)
+    else:
+        shutil.rmtree(path, onerror=_handle_remove_readonly)
 
 
 def validate_github_url(github_url: str) -> str:

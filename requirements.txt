@@ -21,7 +21,12 @@ langchain
 langchain-community
 langchain-core
 langchain-text-splitters
-langchain-google-genai==4.5.2
+
+# Local ONNX Embeddings (free & unlimited)
+onnxruntime
+tokenizers
+huggingface_hub
+numpy
 
 # Vector Search
 faiss-cpu

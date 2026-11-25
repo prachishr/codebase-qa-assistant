@@ -3,11 +3,51 @@
 // API BASE URL
 // =========================================
 
-// Production FastAPI server
-const API_BASE_URL = "https://codebase-qa-assistant-r80e.onrender.com/api/v1";
+const PRODUCTION_API_BASE_URL = "https://codebase-qa-assistant-r80e.onrender.com/api/v1";
+const LOCAL_API_BASE_URL = "http://127.0.0.1:8000/api/v1";
 
-// Local FastAPI server
-// const API_BASE_URL = "http://127.0.0.1:8000/api/v1";
+let resolvedApiBaseUrlPromise = null;
+
+function isLocalFrontendHost() {
+    const host = window.location.hostname;
+    return (
+        host === "localhost" ||
+        host === "127.0.0.1" ||
+        host === "::1" ||
+        host === ""
+    );
+}
+
+async function resolveApiBaseUrl() {
+    if (resolvedApiBaseUrlPromise) {
+        return resolvedApiBaseUrlPromise;
+    }
+
+    resolvedApiBaseUrlPromise = (async () => {
+        const customUrl = localStorage.getItem("api_base_url");
+        if (customUrl) {
+            return customUrl.replace(/\/+$/, "");
+        }
+
+        if (isLocalFrontendHost()) {
+            return LOCAL_API_BASE_URL;
+        }
+
+        return PRODUCTION_API_BASE_URL;
+    })();
+
+    return resolvedApiBaseUrlPromise;
+}
+
+async function warmupServer() {
+    try {
+        const baseUrl = await resolveApiBaseUrl();
+        const rootUrl = baseUrl.replace(/\/api\/v1\/?$/, "");
+        await fetch(`${rootUrl}/health`, { method: "GET" });
+    } catch {
+        // Ignore warmup failures; actual requests will handle errors.
+    }
+}
 
 
 // =========================================
@@ -16,7 +56,9 @@ const API_BASE_URL = "https://codebase-qa-assistant-r80e.onrender.com/api/v1";
 
 async function apiRequest(endpoint, options = {}) {
 
+    const baseUrl = await resolveApiBaseUrl();
     const token = localStorage.getItem("access_token");
+    const timeoutMs = options.timeoutMs ?? 150000;
 
     const headers = {
         "Content-Type": "application/json",
@@ -27,13 +69,19 @@ async function apiRequest(endpoint, options = {}) {
         headers.Authorization = `Bearer ${token}`;
     }
 
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
     try {
 
+        const { timeoutMs: _ignored, ...fetchOptions } = options;
+
         const response = await fetch(
-            `${API_BASE_URL}${endpoint}`,
+            `${baseUrl}${endpoint}`,
             {
-                ...options,
-                headers
+                ...fetchOptions,
+                headers,
+                signal: options.signal || controller.signal
             }
         );
 
@@ -60,13 +108,26 @@ async function apiRequest(endpoint, options = {}) {
 
     } catch (error) {
 
+        if (error.name === "AbortError") {
+            throw new Error(
+                "Request timed out while waiting for the server. Please try again."
+            );
+        }
+
         if (error instanceof TypeError) {
+            if (isLocalFrontendHost() && !localStorage.getItem("api_base_url")) {
+                throw new Error(
+                    "Unable to connect to local backend (http://127.0.0.1:8000). Make sure the FastAPI server is running (python run.py)."
+                );
+            }
             throw new Error(
                 "Unable to connect to the server. Please check your internet connection."
             );
         }
 
         throw error;
+    } finally {
+        clearTimeout(timer);
     }
 }
 
@@ -77,9 +138,18 @@ async function apiRequest(endpoint, options = {}) {
 
 const AuthAPI = {
 
+    signup: async (userData) => {
+
+        return await apiRequest("/auth/signup", {
+            method: "POST",
+            body: JSON.stringify(userData)
+        });
+
+    },
+
     register: async (userData) => {
 
-        return await apiRequest("/auth/register", {
+        return await apiRequest("/auth/signup", {
             method: "POST",
             body: JSON.stringify(userData)
         });
@@ -99,6 +169,42 @@ const AuthAPI = {
 
         return await apiRequest("/auth/me", {
             method: "GET"
+        });
+
+    },
+
+    changePassword: async (passwordData) => {
+
+        return await apiRequest("/auth/change-password", {
+            method: "POST",
+            body: JSON.stringify(passwordData)
+        });
+
+    },
+
+    logout: async () => {
+
+        return await apiRequest("/auth/logout", {
+            method: "POST",
+            timeoutMs: 3000
+        });
+
+    },
+
+    forgotPassword: async (payload) => {
+
+        return await apiRequest("/auth/forgot-password", {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+
+    },
+
+    resetPassword: async (payload) => {
+
+        return await apiRequest("/auth/reset-password", {
+            method: "POST",
+            body: JSON.stringify(payload)
         });
 
     }
@@ -150,9 +256,10 @@ const RepositoryAPI = {
     },
 
     // Index repository
-    index: async (repositoryId) => {
+    index: async (repositoryId, background = false) => {
 
-        return await apiRequest(`/repositories/${repositoryId}/index`, {
+        const query = background ? "?background=true" : "";
+        return await apiRequest(`/repositories/${repositoryId}/index${query}`, {
             method: "POST"
         });
 
@@ -163,6 +270,15 @@ const RepositoryAPI = {
 
         return await apiRequest(`/repositories/${repositoryId}/reindex`, {
             method: "POST"
+        });
+
+    },
+
+    // Get indexing / re-indexing job status
+    getStatus: async (repositoryId) => {
+
+        return await apiRequest(`/repositories/${repositoryId}/status`, {
+            method: "GET"
         });
 
     },

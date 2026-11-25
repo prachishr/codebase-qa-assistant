@@ -1,8 +1,26 @@
 
 import os
+from functools import lru_cache
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from .ingestion import load_repository
+
+
+MAX_AST_CHUNK_CHARS = 2500
+
+
+@lru_cache(maxsize=32)
+def _get_cached_parser(language):
+    """Load and cache Tree-sitter parser per language, returning None if unavailable."""
+    try:
+        from tree_sitter_language_pack import get_parser
+        return get_parser(language)
+    except Exception as exc:
+        print(
+            f"[WARNING] Tree-sitter unavailable for {language}. "
+            f"Using text-based chunking. Reason: {exc}"
+        )
+        return None
 
 
 CODE_EXTENSIONS = {
@@ -29,8 +47,10 @@ def get_code_chunks(content, language, text_splitter):
     """
 
     try:
-        from tree_sitter_language_pack import get_parser
-        parser = get_parser(language)
+        parser = _get_cached_parser(language)
+        if parser is None:
+            fallback_chunks = text_splitter.split_text(content)
+            return fallback_chunks, "code_fallback"
 
         source_bytes = content.encode("utf-8")
         tree = parser.parse(source_bytes)
@@ -59,7 +79,10 @@ def get_code_chunks(content, language, text_splitter):
                 )
 
                 if chunk.strip():
-                    chunks.append(chunk)
+                    if len(chunk) > MAX_AST_CHUNK_CHARS:
+                        chunks.extend(text_splitter.split_text(chunk))
+                    else:
+                        chunks.append(chunk)
 
                 return
 

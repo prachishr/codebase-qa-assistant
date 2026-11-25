@@ -3,13 +3,117 @@
 
 import re
 import os
+import threading
+from pathlib import Path
 from functools import lru_cache
 
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+import numpy as np
+import onnxruntime as ort
+from huggingface_hub import hf_hub_download
+from tokenizers import Tokenizer
+from langchain_core.embeddings import Embeddings
 from langchain_community.vectorstores import FAISS
 
 
 FAISS_PATH = "faiss_index"
+DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+
+_VECTOR_STORE_CACHE = {}
+_VECTOR_STORE_LOCK = threading.Lock()
+
+
+class LocalONNXEmbeddings(Embeddings):
+    """Local CPU embeddings using ONNX Runtime and HuggingFace tokenizers."""
+
+    def __init__(
+        self,
+        model_id: str = DEFAULT_EMBEDDING_MODEL,
+        max_length: int = 256,
+        batch_size: int = 32,
+    ):
+        self.model_id = model_id
+        self.max_length = max_length
+        self.batch_size = batch_size
+
+        tokenizer_path = self._get_model_file("tokenizer.json")
+        model_path = self._get_model_file("onnx/model.onnx")
+
+        self._tokenizer = Tokenizer.from_file(tokenizer_path)
+        self._tokenizer.enable_truncation(max_length=self.max_length)
+        pad_id = self._tokenizer.token_to_id("[PAD]")
+        self._tokenizer.enable_padding(
+            pad_id=pad_id if pad_id is not None else 0,
+            pad_token="[PAD]",
+        )
+
+        sess_options = ort.SessionOptions()
+        sess_options.graph_optimization_level = (
+            ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+        )
+        self._session = ort.InferenceSession(
+            model_path,
+            sess_options=sess_options,
+            providers=["CPUExecutionProvider"],
+        )
+        self._input_names = {inp.name for inp in self._session.get_inputs()}
+
+    def _get_model_file(self, filename: str) -> str:
+        """Use cached HuggingFace file without network calls when available."""
+        try:
+            return hf_hub_download(
+                repo_id=self.model_id,
+                filename=filename,
+                local_files_only=True,
+            )
+        except Exception:
+            return hf_hub_download(
+                repo_id=self.model_id,
+                filename=filename,
+            )
+
+    def _encode_batch(self, texts: list[str]) -> np.ndarray:
+        encodings = self._tokenizer.encode_batch(texts)
+        input_ids = np.array([enc.ids for enc in encodings], dtype=np.int64)
+        attention_mask = np.array(
+            [enc.attention_mask for enc in encodings],
+            dtype=np.int64,
+        )
+
+        feed_dict = {}
+        if "input_ids" in self._input_names:
+            feed_dict["input_ids"] = input_ids
+        if "attention_mask" in self._input_names:
+            feed_dict["attention_mask"] = attention_mask
+        if "token_type_ids" in self._input_names:
+            feed_dict["token_type_ids"] = np.array(
+                [enc.type_ids for enc in encodings],
+                dtype=np.int64,
+            )
+
+        token_embeddings = self._session.run(None, feed_dict)[0]
+
+        mask = attention_mask[..., None].astype(np.float32)
+        summed = np.sum(token_embeddings * mask, axis=1)
+        counts = np.clip(mask.sum(axis=1), a_min=1e-9, a_max=None)
+        pooled = summed / counts
+
+        norms = np.linalg.norm(pooled, axis=1, keepdims=True)
+        normalized = pooled / np.clip(norms, a_min=1e-12, a_max=None)
+        return normalized
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+
+        results: list[list[float]] = []
+        for start in range(0, len(texts), self.batch_size):
+            batch = texts[start:start + self.batch_size]
+            vectors = self._encode_batch(batch)
+            results.extend(vectors.tolist())
+        return results
+
+    def embed_query(self, text: str) -> list[float]:
+        return self.embed_documents([text])[0]
 
 
 # --------------------------------------------------
@@ -18,12 +122,19 @@ FAISS_PATH = "faiss_index"
 
 @lru_cache(maxsize=1)
 def get_embeddings():
-    """Load and reuse Gemini embeddings."""
+    """Load and reuse local ONNX embeddings (no API key or daily limit)."""
+    model_id = os.getenv("EMBEDDING_MODEL_ID", DEFAULT_EMBEDDING_MODEL)
+    return LocalONNXEmbeddings(model_id=model_id)
 
-    return GoogleGenerativeAIEmbeddings(
-        model="models/gemini-embedding-001",
-        google_api_key=os.environ["GEMINI_API_KEY"]
-    )
+
+def invalidate_vector_store_cache(index_path=None):
+    """Clear cached FAISS vector store(s) after re-indexing or deletion."""
+    with _VECTOR_STORE_LOCK:
+        if index_path is None:
+            _VECTOR_STORE_CACHE.clear()
+        else:
+            key = str(Path(index_path).resolve())
+            _VECTOR_STORE_CACHE.pop(key, None)
 
 
 # --------------------------------------------------
@@ -32,13 +143,33 @@ def get_embeddings():
 
 def load_vector_store(index_path=FAISS_PATH):
 
+    resolved_path = Path(index_path).resolve()
+    faiss_file = resolved_path / "index.faiss"
+    pkl_file = resolved_path / "index.pkl"
+
+    if not faiss_file.exists() or not pkl_file.exists():
+        raise FileNotFoundError(
+            "FAISS index is missing or incomplete. Please index or re-index the repository."
+        )
+
+    mtime = (faiss_file.stat().st_mtime, pkl_file.stat().st_mtime)
+    cache_key = str(resolved_path)
+
+    with _VECTOR_STORE_LOCK:
+        cached = _VECTOR_STORE_CACHE.get(cache_key)
+        if cached and cached[0] == mtime:
+            return cached[1]
+
     embeddings = get_embeddings()
 
     vector_store = FAISS.load_local(
-        index_path,
+        str(resolved_path),
         embeddings,
         allow_dangerous_deserialization=True
     )
+
+    with _VECTOR_STORE_LOCK:
+        _VECTOR_STORE_CACHE[cache_key] = (mtime, vector_store)
 
     return vector_store
 
@@ -122,15 +253,15 @@ TOPIC_MAP = {
         "triggers": [
             "embedding", "embeddings", "embed", "vector",
             "vector database", "vector store", "faiss",
-            "similarity search"
+            "similarity search", "onnx"
         ],
         "files": ["vector_store.py", "retrieval.py"],
         "keywords": [
-            "GoogleGenerativeAIEmbeddings",
-            "gemini-embedding-001",
-            "GEMINI_API_KEY",
+            "LocalONNXEmbeddings",
+            "InferenceSession",
+            "all-MiniLM-L6-v2",
             "FAISS",
-            "from_documents",
+            "from_embeddings",
             "save_local",
             "load_local"
         ]
@@ -314,6 +445,11 @@ def keyword_search(
         if word not in ignored_words and len(word) >= 3
     }
 
+    word_patterns = [
+        (word, re.compile(r"\b" + re.escape(word) + r"\b"))
+        for word in searchable_words
+    ]
+
     for doc_id in vector_store.index_to_docstore_id.values():
 
         document = vector_store.docstore.search(doc_id)
@@ -325,15 +461,12 @@ def keyword_search(
         content = document.page_content.lower()
         score = 0
 
-        for word in searchable_words:
+        for word, pattern in word_patterns:
 
             if word in file_name:
                 score += 5
 
-            if re.search(
-                r"\b" + re.escape(word) + r"\b",
-                content
-            ):
+            if pattern.search(content):
                 score += 3
 
         for topic in topics:
@@ -465,8 +598,17 @@ def search_repository(
 
     # 5. Semantic retrieval
 
-    semantic_results = vector_store.similarity_search(
-        question,
+    query_vector = vector_store.embedding_function.embed_query(question)
+    index_dim = getattr(vector_store.index, "d", None)
+    if index_dim is not None and len(query_vector) != index_dim:
+        raise ValueError(
+            f"FAISS index dimension mismatch (index has {index_dim}, "
+            f"embedding model produces {len(query_vector)}). "
+            "Please click Re-index to rebuild this repository's FAISS index."
+        )
+
+    semantic_results = vector_store.similarity_search_by_vector(
+        query_vector,
         k=k * 3
     )
 

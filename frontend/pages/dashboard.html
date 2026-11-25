@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | Codebase QA Assistant</title>
 
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/style.css?v=9">
+    <link rel="stylesheet" href="../css/dashboard.css?v=9">
     <script src="../js/theme.js"></script>
 </head>
 
@@ -61,9 +61,14 @@
                         <span id="sidebarUsername">User</span>
                         <small id="sidebarEmail">user@example.com</small>
                     </div>
+                </div>
 
-                    <button id="logoutBtn" class="logout-btn" title="Log out">
-                        ⇥
+                <div class="account-actions">
+                    <button type="button" id="changePasswordBtn" class="account-action-btn">
+                        Change Password
+                    </button>
+                    <button type="button" id="logoutBtn" class="account-action-btn signout-action-btn">
+                        Sign out
                     </button>
                 </div>
             </div>
@@ -95,6 +100,9 @@
                         <span class="status-dot"></span>
                         AI Assistant
                     </div>
+                    <button type="button" id="headerLogoutBtn" class="btn btn-outline header-signout-btn">
+                        Sign out
+                    </button>
                 </div>
 
             </header>
@@ -259,9 +267,85 @@
     </div>
 
 
-    <script src="../js/api.js"></script>
-    <script src="../js/dashboard.js"></script>
-    <script src="../js/chat.js"></script>
+    <!-- CHANGE PASSWORD MODAL -->
+    <div class="modal-overlay" id="changePasswordModal">
+
+        <div class="modal-card">
+
+            <div class="modal-header">
+                <div>
+                    <h2>Change Password</h2>
+                    <p>Update your account password.</p>
+                </div>
+
+                <button class="modal-close" id="closeChangePasswordModal" aria-label="Close modal">
+                    ×
+                </button>
+            </div>
+
+            <form id="changePasswordForm">
+
+                <div class="form-group">
+                    <div class="modal-label-row">
+                        <label for="currentPassword">Current Password</label>
+                        <button type="button" id="forgotCurrentPasswordBtn" class="modal-link-btn">
+                            Forgot password?
+                        </button>
+                    </div>
+                    <input
+                        type="password"
+                        id="currentPassword"
+                        name="current_password"
+                        placeholder="Enter your current password"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <input
+                        type="password"
+                        id="newPassword"
+                        name="new_password"
+                        placeholder="At least 8 characters"
+                        autocomplete="new-password"
+                        minlength="8"
+                        maxlength="128"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmNewPassword">Confirm New Password</label>
+                    <input
+                        type="password"
+                        id="confirmNewPassword"
+                        name="confirm_new_password"
+                        placeholder="Re-enter your new password"
+                        autocomplete="new-password"
+                        minlength="8"
+                        maxlength="128"
+                        required
+                    >
+                </div>
+
+                <div id="changePasswordMessage" class="form-message" role="status" aria-live="polite"></div>
+
+                <button type="submit" id="changePasswordSubmitBtn" class="btn btn-primary modal-submit">
+                    Update Password
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <script src="../js/api.js?v=9"></script>
+    <script src="../js/dashboard.js?v=9"></script>
+    <script src="../js/chat.js?v=9"></script>
 
 </body>
 </html>

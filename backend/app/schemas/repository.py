@@ -12,5 +12,6 @@ class RepositoryResponse(BaseModel):
     name: str
     github_url: str
     user_id: int
+    indexed: bool = False
 
     model_config = ConfigDict(from_attributes=True)

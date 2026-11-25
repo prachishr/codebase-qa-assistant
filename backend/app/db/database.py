@@ -30,7 +30,11 @@ elif database_url.startswith("postgres://"):
 engine = create_async_engine(
     database_url,
     connect_args={"ssl": "require"},
-    pool_pre_ping=True
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=10,
+    pool_recycle=300,
+    pool_timeout=30,
 )
 
 

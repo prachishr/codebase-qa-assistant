@@ -187,6 +187,21 @@
     align-items: center;
 }
 
+.forgot-password-link {
+    font-size: 12px;
+    font-weight: 500;
+    color: #a78bfa;
+    transition: color 0.2s ease;
+}
+
+.forgot-password-link:hover {
+    color: #c4b5fd;
+}
+
+[data-theme="light"] .forgot-password-link {
+    color: #7c3aed !important;
+}
+
 /* =================================
    5. SUBMIT BUTTON
 ================================= */

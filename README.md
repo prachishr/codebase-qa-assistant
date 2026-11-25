@@ -337,8 +337,10 @@ Replace the placeholder values with your actual credentials.
 From the project root, execute:
 
 ```bash
-python -m uvicorn backend.app.main:app --reload
+python -m uvicorn backend.app.main:app --reload --reload-dir backend --reload-dir core
 ```
+
+*(Using `--reload-dir backend --reload-dir core` prevents `uvicorn` from restarting when repositories are cloned into `workspaces/`.)*
 
 The backend will be available at:
 

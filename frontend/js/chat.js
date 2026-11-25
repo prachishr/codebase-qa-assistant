@@ -164,9 +164,9 @@ document.addEventListener("DOMContentLoaded", async () => {
        3. INITIALIZE SIDEBAR HISTORY
     ===================================== */
 
-    if (document.getElementById("conversationList")) {
-        await loadConversationHistory();
-    }
+    const initialHistoryPromise = document.getElementById("conversationList")
+        ? loadConversationHistory()
+        : Promise.resolve();
 
 
     /* =====================================
@@ -191,6 +191,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     ===================================== */
 
     if (!repositoryId || !dashboardContent) {
+        await initialHistoryPromise;
         return;
     }
 
@@ -292,17 +293,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     const messagesContainer =
         document.getElementById("chatMessages");
 
-    try {
+    const conversationReadyPromise = (async () => {
+        const repositoryPromise = RepositoryAPI.getById(repositoryId);
+        const conversationPromise = conversationId
+            ? ConversationAPI.getById(conversationId)
+            : ConversationAPI.create(Number(repositoryId));
 
-        const repository = await RepositoryAPI.getById(repositoryId);
+        const [repository, conversation] = await Promise.all([
+            repositoryPromise,
+            conversationPromise
+        ]);
 
         repositoryNameElement.textContent = repository.name;
+        activeConversation = conversation;
 
         if (conversationId) {
-
-            activeConversation =
-                await ConversationAPI.getById(conversationId);
-
             if (String(activeConversation.repository_id) !== repositoryId) {
                 throw new Error(
                     "Conversation does not belong to this repository."
@@ -322,17 +327,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             });
 
+            messagesContainer.scrollTop =
+                messagesContainer.scrollHeight;
         } else {
-
-            activeConversation = await ConversationAPI.create(
-                repository.id
-            );
-
-            await loadConversationHistory();
-
+            loadConversationHistory();
         }
 
-    } catch (error) {
+        return activeConversation;
+    })();
+
+    conversationReadyPromise.catch((error) => {
 
         repositoryNameElement.textContent =
             "Unable to open conversation";
@@ -344,20 +348,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         errorMessage.textContent = error.message;
 
         messagesContainer.appendChild(errorMessage);
-
-        return;
-
-    }
-
-    requestAnimationFrame(() => {
-
-        chatSection.scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-        });
-
-        messagesContainer.scrollTop =
-            messagesContainer.scrollHeight;
 
     });
 
@@ -474,20 +464,34 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function sendQuestion(question) {
 
-        addUserMessage(question);
-
-        showLoadingMessage();
-
         const sendButton =
             document.getElementById("sendQuestionBtn");
 
         const questionInput =
             document.getElementById("chatQuestion");
 
+        const suggestedButtons =
+            document.querySelectorAll(".suggested-questions button");
+
+        if (sendButton.disabled) {
+            return;
+        }
+
         sendButton.disabled = true;
         questionInput.disabled = true;
+        suggestedButtons.forEach((btn) => {
+            btn.disabled = true;
+        });
+
+        addUserMessage(question);
+
+        showLoadingMessage();
 
         try {
+
+            if (!activeConversation) {
+                await conversationReadyPromise;
+            }
 
             const response = await apiRequest(
                 `/repositories/${repositoryId}/ask`,
@@ -523,6 +527,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             sendButton.disabled = false;
             questionInput.disabled = false;
+            suggestedButtons.forEach((btn) => {
+                btn.disabled = false;
+            });
             questionInput.focus();
 
         }
@@ -586,5 +593,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             window.location.href = "dashboard.html";
 
         });
+
+    await initialHistoryPromise;
 
 });

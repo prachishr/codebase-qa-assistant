@@ -21,6 +21,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const refreshRepositoriesBtn = document.getElementById("refreshRepositoriesBtn");
     const logoutBtn = document.getElementById("logoutBtn");
+    const headerLogoutBtn = document.getElementById("headerLogoutBtn");
+
+    const changePasswordModal = document.getElementById("changePasswordModal");
+    const changePasswordBtn = document.getElementById("changePasswordBtn");
+    const closeChangePasswordModal = document.getElementById("closeChangePasswordModal");
+    const changePasswordForm = document.getElementById("changePasswordForm");
+    const changePasswordMessage = document.getElementById("changePasswordMessage");
+    const changePasswordSubmitBtn = document.getElementById("changePasswordSubmitBtn");
+    const forgotCurrentPasswordBtn = document.getElementById("forgotCurrentPasswordBtn");
 
     const submitButton = repositoryForm.querySelector(
         'button[type="submit"]'
@@ -28,6 +37,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     let isProcessing = false;
     let retryOperation = null;
+    let currentUserEmail = "";
 
 
     // =====================================
@@ -46,6 +56,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
 
         const currentUser = await AuthAPI.getCurrentUser();
+        currentUserEmail = currentUser.email;
 
         document.getElementById("sidebarUsername").textContent =
             currentUser.username;
@@ -158,6 +169,44 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
+    async function waitForIndexingCompletion(repositoryId, onProgress) {
+
+        const pollIntervalMs = 2000;
+        const maxWaitMs = 15 * 60 * 1000;
+        const startedAt = Date.now();
+
+        while (Date.now() - startedAt < maxWaitMs) {
+            await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+
+            const statusData = await RepositoryAPI.getStatus(repositoryId);
+
+            if (typeof onProgress === "function") {
+                onProgress(statusData);
+            }
+
+            if (statusData.status === "completed") {
+                return statusData;
+            }
+
+            if (statusData.status === "failed") {
+                throw new Error(
+                    statusData.error || statusData.message || "Indexing failed."
+                );
+            }
+
+            if (statusData.status === "idle") {
+                throw new Error(
+                    "Indexing was interrupted (backend restarted). " +
+                    "Start uvicorn with --reload-dir backend --reload-dir core (or python run.py) and try again."
+                );
+            }
+        }
+
+        throw new Error(
+            "Indexing is taking longer than expected. Please refresh and check repository status."
+        );
+    }
+
 
     // =====================================
     // 6. EXTRACT REPOSITORY NAME
@@ -223,6 +272,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         const title = document.createElement("h3");
         title.textContent = repository.name;
 
+        const statusBadge = document.createElement("span");
+        statusBadge.className = repository.indexed
+            ? "repo-status-badge indexed"
+            : "repo-status-badge not-indexed";
+        statusBadge.textContent = repository.indexed
+            ? "Indexed"
+            : "Not Indexed";
+
         const description = document.createElement("p");
         description.textContent = repository.github_url;
 
@@ -240,7 +297,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Re-index button
         const reindexButton = document.createElement("button");
         reindexButton.className = "btn btn-outline";
-        reindexButton.textContent = "Re-index";
+        reindexButton.textContent = repository.indexed ? "Re-index" : "Index";
         reindexButton.type = "button";
 
 
@@ -251,7 +308,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         deleteButton.type = "button";
 
 
-        heading.append(icon, title);
+        heading.append(icon, title, statusBadge);
 
         actions.append(
             askButton,
@@ -294,14 +351,31 @@ document.addEventListener("DOMContentLoaded", async () => {
                 askButton.disabled = true;
                 deleteButton.disabled = true;
 
-                reindexButton.textContent = "Re-indexing...";
+                reindexButton.textContent = "Starting...";
 
-                const result = await RepositoryAPI.reindex(repository.id);
+                const initialResult = await RepositoryAPI.reindex(repository.id);
+
+                let finalResult = initialResult;
+
+                if (initialResult.status === "processing") {
+                    reindexButton.textContent = "Cloning...";
+
+                    finalResult = await waitForIndexingCompletion(
+                        repository.id,
+                        (statusData) => {
+                            if (statusData.stage === "cloning") {
+                                reindexButton.textContent = "Cloning...";
+                            } else if (statusData.stage === "indexing") {
+                                reindexButton.textContent = "Indexing...";
+                            }
+                        }
+                    );
+                }
 
                 alert(
                     `Repository re-indexed successfully!\n\n` +
-                    `Documents: ${result.documents_processed ?? "N/A"}\n` +
-                    `Chunks: ${result.chunks_created ?? "N/A"}`
+                    `Documents: ${finalResult.documents_processed ?? "N/A"}\n` +
+                    `Chunks: ${finalResult.chunks_created ?? "N/A"}`
                 );
 
                 await loadRepositories();
@@ -318,7 +392,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 askButton.disabled = false;
                 deleteButton.disabled = false;
 
-                reindexButton.textContent = "Re-index";
+                reindexButton.textContent = repository.indexed ? "Re-index" : "Index";
             }
         });
 
@@ -474,10 +548,18 @@ document.addEventListener("DOMContentLoaded", async () => {
             submitButton.textContent = "Indexing Repository...";
 
             showProgress(
-                "Step 2 of 2: Analyzing files and creating embeddings. This may take a few minutes..."
+                "Step 2 of 2: Analyzing files and creating FAISS embeddings..."
             );
 
-            const result = await RepositoryAPI.index(repositoryId);
+            const initialResult = await RepositoryAPI.index(repositoryId, true);
+
+            const result = initialResult.status === "processing"
+                ? await waitForIndexingCompletion(repositoryId, (statusData) => {
+                    if (statusData.message) {
+                        showProgress(`Step 2 of 2: ${statusData.message}`);
+                    }
+                })
+                : initialResult;
 
             retryOperation = null;
 
@@ -540,7 +622,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             submitButton.textContent = "Indexing Repository...";
 
-            const result = await RepositoryAPI.index(repositoryId);
+            const initialResult = await RepositoryAPI.index(repositoryId, true);
+
+            const result = initialResult.status === "processing"
+                ? await waitForIndexingCompletion(repositoryId, (statusData) => {
+                    if (statusData.message) {
+                        showProgress(statusData.message);
+                    }
+                })
+                : initialResult;
 
             retryOperation = null;
 
@@ -672,15 +762,139 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
     // =====================================
-    // 13. LOGOUT
+    // 13. CHANGE PASSWORD & SIGN OUT
     // =====================================
 
-    logoutBtn.addEventListener("click", () => {
+    function openChangePasswordModal() {
+        changePasswordModal.classList.add("active");
+        changePasswordForm.reset();
+        changePasswordMessage.textContent = "";
+        changePasswordMessage.style.color = "";
+        changePasswordSubmitBtn.disabled = false;
+        changePasswordSubmitBtn.textContent = "Update Password";
+    }
 
+    function closePasswordModal() {
+        changePasswordModal.classList.remove("active");
+        changePasswordMessage.textContent = "";
+    }
+
+    if (changePasswordBtn) {
+        changePasswordBtn.addEventListener("click", openChangePasswordModal);
+    }
+
+    if (closeChangePasswordModal) {
+        closeChangePasswordModal.addEventListener("click", closePasswordModal);
+    }
+
+    if (changePasswordModal) {
+        changePasswordModal.addEventListener("click", (event) => {
+            if (event.target === changePasswordModal) {
+                closePasswordModal();
+            }
+        });
+    }
+
+    if (forgotCurrentPasswordBtn) {
+        forgotCurrentPasswordBtn.addEventListener("click", async () => {
+            if (!currentUserEmail) {
+                changePasswordMessage.style.color = "#fca5a5";
+                changePasswordMessage.textContent = "Unable to detect your account email. Please refresh and try again.";
+                return;
+            }
+
+            forgotCurrentPasswordBtn.disabled = true;
+            forgotCurrentPasswordBtn.textContent = "Sending...";
+            changePasswordMessage.style.color = "#93c5fd";
+            changePasswordMessage.textContent = `Sending reset link to ${currentUserEmail}...`;
+
+            try {
+                await AuthAPI.forgotPassword({ email: currentUserEmail });
+
+                changePasswordMessage.style.color = "#86efac";
+                changePasswordMessage.textContent =
+                    `Password reset link sent to ${currentUserEmail}. Check your email (Inbox, All Mail, or Spam).`;
+            } catch (error) {
+                changePasswordMessage.style.color = "#fca5a5";
+                changePasswordMessage.textContent = error.message;
+            } finally {
+                forgotCurrentPasswordBtn.disabled = false;
+                forgotCurrentPasswordBtn.textContent = "Forgot password?";
+            }
+        });
+    }
+
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const currentPassword = document.getElementById("currentPassword").value;
+            const newPassword = document.getElementById("newPassword").value;
+            const confirmNewPassword = document.getElementById("confirmNewPassword").value;
+
+            changePasswordMessage.textContent = "";
+
+            if (newPassword.length < 8) {
+                changePasswordMessage.style.color = "#fca5a5";
+                changePasswordMessage.textContent = "New password must be at least 8 characters.";
+                return;
+            }
+
+            if (newPassword !== confirmNewPassword) {
+                changePasswordMessage.style.color = "#fca5a5";
+                changePasswordMessage.textContent = "New passwords do not match.";
+                return;
+            }
+
+            if (newPassword === currentPassword) {
+                changePasswordMessage.style.color = "#fca5a5";
+                changePasswordMessage.textContent = "New password must be different from your current password.";
+                return;
+            }
+
+            changePasswordSubmitBtn.disabled = true;
+            changePasswordSubmitBtn.textContent = "Updating...";
+
+            try {
+                const result = await AuthAPI.changePassword({
+                    current_password: currentPassword,
+                    new_password: newPassword
+                });
+
+                changePasswordMessage.style.color = "#86efac";
+                changePasswordMessage.textContent = result.message || "Password changed successfully!";
+                changePasswordForm.reset();
+
+                setTimeout(() => {
+                    closePasswordModal();
+                }, 1500);
+            } catch (error) {
+                changePasswordMessage.style.color = "#fca5a5";
+                changePasswordMessage.textContent = error.message;
+            } finally {
+                changePasswordSubmitBtn.disabled = false;
+                changePasswordSubmitBtn.textContent = "Update Password";
+            }
+        });
+    }
+
+    async function signOutUser() {
+        try {
+            await AuthAPI.logout();
+        } catch {
+            // Clear local session even if backend is unreachable.
+        }
         localStorage.removeItem("access_token");
-
         window.location.href = "login.html";
-    });
+    }
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", signOutUser);
+    }
+
+    if (headerLogoutBtn) {
+        headerLogoutBtn.addEventListener("click", signOutUser);
+    }
 
 
     // Wait for initial repository loading to finish.

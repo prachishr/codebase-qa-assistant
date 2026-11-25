@@ -9,7 +9,7 @@ from core.vector_store import create_vector_store
 WORKSPACE_DIR = Path(__file__).resolve().parents[3] / "workspaces"
 
 
-def index_repository(user_id: int, repository_id: int):
+def index_repository(user_id: int, repository_id: int, progress_callback=None):
     """
     Load, chunk, and index a cloned GitHub repository.
     Each repository gets its own FAISS index.
@@ -56,7 +56,8 @@ def index_repository(user_id: int, repository_id: int):
     # Step 3: Create and save the FAISS index
     create_vector_store(
         chunks,
-        index_path=str(index_path)
+        index_path=str(index_path),
+        progress_callback=progress_callback
     )
 
     return {
